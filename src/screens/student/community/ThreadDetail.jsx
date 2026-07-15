@@ -1,15 +1,5 @@
 import { useState } from 'react'
-import { BackHeader, T1, T2, T3, BD, BG2, P, PL, PB, PD, INK, Avatar, CommentIcon, timeAgo } from '../../shared'
-
-function Flair({ children, tone }) {
-  const tones = {
-    subject: { bg: PL, fg: PD, border: PB },
-    poll: { bg: '#FFF4E0', fg: '#B96A00', border: '#FFE0AD' },
-    archived: { bg: 'white', fg: T3, border: BD },
-  }
-  const t = tones[tone]
-  return <span style={{ fontSize: 9.5, fontWeight: 800, color: t.fg, background: t.bg, border: `1px solid ${t.border}`, borderRadius: 4, padding: '2px 7px', letterSpacing: '0.01em' }}>{children}</span>
-}
+import { BackHeader, T1, T2, T3, BD, BG2, P, PL, PB, PD, INK, GradientAvatar, SELF_THEME, bubbleThemeFor, roomKindFromKey, ROOM_GRADIENT, CommentIcon, timeAgo } from '../../shared'
 
 export default function ThreadDetail({ state, threadId, onPostReply, onVote, onBack }) {
   const [draft, setDraft] = useState('')
@@ -33,28 +23,33 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onB
 
   const poll = thread.poll
   const voted = poll && poll.myOptionId != null
+  const grad = ROOM_GRADIENT[roomKindFromKey(thread.roomKey)]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'white' }}>
       <BackHeader onBack={onBack} title="Thread" />
 
       <div className="scroll" style={{ flex: 1, overflowY: 'auto' }}>
-        {/* Post header — Reddit-style: flair pills, title, byline, body */}
-        <div style={{ padding: '16px 16px 14px', borderBottom: `8px solid ${BG2}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-            {thread.subjectTag && <Flair tone="subject">{thread.subjectTag}</Flair>}
-            {thread.poll && <Flair tone="poll">📊 POLL</Flair>}
-            {thread.archived && <Flair tone="archived">ARCHIVED</Flair>}
+        {/* Gradient hero — Hike-style colorful banner instead of a flat white header */}
+        <div style={{ background: grad, padding: '20px 18px 22px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.12)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 10, position: 'relative' }}>
+            {thread.subjectTag && <span style={{ fontSize: 9.5, fontWeight: 800, color: 'white', background: 'rgba(255,255,255,0.24)', borderRadius: 20, padding: '3px 10px' }}>{thread.subjectTag}</span>}
+            {thread.poll && <span style={{ fontSize: 9.5, fontWeight: 800, color: 'white', background: 'rgba(255,255,255,0.24)', borderRadius: 20, padding: '3px 10px' }}>📊 POLL</span>}
+            {thread.archived && <span style={{ fontSize: 9.5, fontWeight: 800, color: 'white', background: 'rgba(255,255,255,0.24)', borderRadius: 20, padding: '3px 10px' }}>ARCHIVED</span>}
           </div>
-          <div style={{ fontSize: 16.5, fontWeight: 800, color: INK, lineHeight: 1.32, marginBottom: 8 }}>{thread.title}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: thread.body ? 10 : 0 }}>
-            <Avatar name="NPrep" size={20} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>NPrep Team</span>
-            <span style={{ fontSize: 10, color: T3 }}>· {timeAgo(thread.createdAt)}</span>
+          <div style={{ fontSize: 18, fontWeight: 800, color: 'white', lineHeight: 1.32, position: 'relative' }}>{thread.title}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, position: 'relative' }}>
+            <GradientAvatar name="NPrep" size={20} grad="rgba(255,255,255,0.3)" />
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.92)' }}>NPrep Team</span>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)' }}>· {timeAgo(thread.createdAt)}</span>
           </div>
-          {thread.body && <div style={{ fontSize: 13, color: T1, lineHeight: 1.6 }}>{thread.body}</div>}
+        </div>
+
+        <div style={{ padding: '16px 18px 4px' }}>
+          {thread.body && <div style={{ fontSize: 13, color: T1, lineHeight: 1.6, marginBottom: thread.archived ? 10 : 0 }}>{thread.body}</div>}
           {thread.archived && (
-            <div style={{ marginTop: 10, fontSize: 11, fontWeight: 700, color: T3, background: BG2, borderRadius: 8, padding: '7px 10px' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: T3, background: BG2, borderRadius: 8, padding: '7px 10px' }}>
               Archived — no longer accepting replies
             </div>
           )}
@@ -87,34 +82,38 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onB
           </div>
         )}
 
-        {/* Comments — Reddit-style: avatar + username + time, comment body indented to align under the name */}
-        <div style={{ padding: '4px 16px 16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 0', borderBottom: `1px solid ${BG2}`, marginBottom: 4 }}>
+        {/* Comments — Hike-style chat bubbles: colorful gradient avatar + tinted bubble,
+            your own replies flip to the right in the primary theme like an outgoing message. */}
+        <div style={{ padding: '6px 14px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 4px', marginBottom: 4 }}>
             <CommentIcon size={14} color={T1} />
             <span style={{ fontSize: 12.5, fontWeight: 800, color: T1 }}>{replies.length} Comment{replies.length === 1 ? '' : 's'}</span>
           </div>
-          {replies.length === 0 && <div style={{ fontSize: 11.5, color: T3, padding: '14px 0' }}>No comments yet — be the first to jump in.</div>}
-          {replies.map(r => (
-            <div key={r.id} style={{ display: 'flex', gap: 10, padding: '12px 0', borderBottom: `1px solid ${BG2}` }}>
-              {r.hidden ? (
-                <>
-                  <Avatar name="—" size={26} />
-                  <div style={{ fontSize: 11.5, color: T3, fontStyle: 'italic', paddingTop: 4 }}>This reply was removed</div>
-                </>
-              ) : (
-                <>
-                  <Avatar name={r.authorName} size={26} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 3 }}>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: r.studentKey === 'demo' ? P : T1 }}>{r.authorName}</span>
-                      <span style={{ fontSize: 10, color: T3 }}>{timeAgo(r.createdAt)}</span>
-                    </div>
+          {replies.length === 0 && <div style={{ fontSize: 11.5, color: T3, padding: '14px 10px' }}>No comments yet — be the first to jump in.</div>}
+          {replies.map(r => {
+            if (r.hidden) {
+              return (
+                <div key={r.id} style={{ display: 'flex', gap: 8, padding: '6px 4px', marginBottom: 10 }}>
+                  <GradientAvatar name="—" size={28} grad={BG2} />
+                  <div style={{ background: BG2, borderRadius: '4px 16px 16px 16px', padding: '9px 13px', fontSize: 11.5, color: T3, fontStyle: 'italic' }}>This reply was removed</div>
+                </div>
+              )
+            }
+            const isSelf = r.studentKey === 'demo'
+            const theme = isSelf ? SELF_THEME : bubbleThemeFor(r.authorName)
+            return (
+              <div key={r.id} style={{ display: 'flex', gap: 8, padding: '6px 4px', marginBottom: 10, flexDirection: isSelf ? 'row-reverse' : 'row' }}>
+                <GradientAvatar name={r.authorName} size={28} grad={theme.grad} />
+                <div style={{ maxWidth: '78%' }}>
+                  <div style={{ background: theme.bubble, borderRadius: isSelf ? '16px 4px 16px 16px' : '4px 16px 16px 16px', padding: '9px 13px' }}>
+                    {!isSelf && <div style={{ fontSize: 11, fontWeight: 800, color: T1, marginBottom: 2 }}>{r.authorName}</div>}
                     <div style={{ fontSize: 12.5, color: T1, lineHeight: 1.5 }}>{r.body}</div>
                   </div>
-                </>
-              )}
-            </div>
-          ))}
+                  <div style={{ fontSize: 9.5, color: T3, marginTop: 3, textAlign: isSelf ? 'right' : 'left', padding: '0 4px' }}>{timeAgo(r.createdAt)}</div>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -124,7 +123,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onB
             placeholder="Join the conversation…"
             style={{ flex: 1, border: `1.5px solid ${BD}`, borderRadius: 22, padding: '10px 15px', fontSize: 12.5, outline: 'none' }} />
           <button onClick={submit} disabled={!draft.trim()}
-            style={{ background: draft.trim() ? P : BD, color: 'white', border: 'none', borderRadius: '50%', width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: draft.trim() ? 'pointer' : 'default', flexShrink: 0 }}>
+            style={{ background: draft.trim() ? grad : BD, color: 'white', border: 'none', borderRadius: '50%', width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: draft.trim() ? 'pointer' : 'default', flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
           </button>
         </div>

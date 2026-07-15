@@ -69,6 +69,47 @@ export function Avatar({ name, size = 28 }) {
   )
 }
 
+// Hike-style vibrant gradients — one per room type, reused for the room's hero banner,
+// its icon in every list, and (paired with a light tint) its comment bubbles.
+export const ROOM_GRADIENT = {
+  daily_dose: 'linear-gradient(135deg,#FF9E1B,#FF5E7E)',
+  subject_room: 'linear-gradient(135deg,#1D5BF0,#7C3AED)',
+  exam_room: 'linear-gradient(135deg,#F5576C,#F093FB)',
+  webinar_threads: 'linear-gradient(135deg,#00B8A9,#1D5BF0)',
+}
+export function roomKindFromKey(roomKey) {
+  if (roomKey === 'daily_dose') return 'daily_dose'
+  if (roomKey === 'subject_room') return 'subject_room'
+  if (roomKey === 'webinar_threads') return 'webinar_threads'
+  if (roomKey && roomKey.startsWith('exam_room')) return 'exam_room'
+  return 'subject_room'
+}
+
+// Chat-bubble color themes for commenters — a vibrant gradient avatar paired with a
+// matching light-tint bubble background, hashed from the name so it stays stable per author.
+const BUBBLE_THEMES = [
+  { grad: 'linear-gradient(135deg,#FF9E1B,#FF5E7E)', bubble: '#FFF1E6' },
+  { grad: 'linear-gradient(135deg,#00B8A9,#1D5BF0)', bubble: '#E3FBF6' },
+  { grad: 'linear-gradient(135deg,#F5576C,#F093FB)', bubble: '#FDEAF3' },
+  { grad: 'linear-gradient(135deg,#FBBF24,#F59E0B)', bubble: '#FFF6DD' },
+  { grad: 'linear-gradient(135deg,#43E97B,#38F9D7)', bubble: '#E7FBF3' },
+]
+export const SELF_THEME = { grad: 'linear-gradient(135deg,#1D5BF0,#7C3AED)', bubble: '#EEF0FE' }
+export function bubbleThemeFor(name) {
+  let h = 0
+  for (let i = 0; i < (name || '').length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0
+  return BUBBLE_THEMES[h % BUBBLE_THEMES.length]
+}
+
+export function GradientAvatar({ name, size = 30, grad }) {
+  const initial = (name || '?').trim().charAt(0).toUpperCase() || '?'
+  return (
+    <span style={{ width: size, height: size, borderRadius: '50%', background: grad || bubbleThemeFor(name).grad, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.42, fontWeight: 800, flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>
+      {initial}
+    </span>
+  )
+}
+
 export function CommentIcon({ size = 13, color = T2 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

@@ -1,13 +1,14 @@
-import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, CommentIcon, timeAgo } from '../../shared'
+import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, CommentIcon, ROOM_GRADIENT, timeAgo } from '../../shared'
 
 function Flair({ children, tone }) {
   const tones = {
-    subject: { bg: PL, fg: PD, border: PB },
-    poll: { bg: '#FFF4E0', fg: '#B96A00', border: '#FFE0AD' },
-    archived: { bg: 'white', fg: T3, border: BD },
+    subject: 'linear-gradient(135deg,#1D5BF0,#7C3AED)',
+    poll: 'linear-gradient(135deg,#FBBF24,#F59E0B)',
+    archived: null,
   }
-  const t = tones[tone]
-  return <span style={{ fontSize: 9.5, fontWeight: 800, color: t.fg, background: t.bg, border: `1px solid ${t.border}`, borderRadius: 4, padding: '2px 7px', letterSpacing: '0.01em' }}>{children}</span>
+  const grad = tones[tone]
+  if (!grad) return <span style={{ fontSize: 9.5, fontWeight: 800, color: T3, background: BG2, border: `1px solid ${BD}`, borderRadius: 20, padding: '2px 9px' }}>{children}</span>
+  return <span style={{ fontSize: 9.5, fontWeight: 800, color: 'white', background: grad, borderRadius: 20, padding: '3px 9px' }}>{children}</span>
 }
 
 export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOpenThread, onBack }) {
@@ -16,18 +17,27 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
   const roomKey = tile.kind === 'exam_room' ? (profile.exam ? 'exam_room_' + profile.exam.toLowerCase() : null) : tile.key
   const joined = roomKey ? enrolledRoomKeys.includes(roomKey) : false
   const list = roomKey ? threads.filter(t => t.roomKey === roomKey && !t.hidden).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : []
+  const grad = ROOM_GRADIENT[tile.kind]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'white' }}>
       <BackHeader onBack={onBack} title={tile.label} right={roomKey && (
         <button onClick={() => onSetRoomJoined(roomKey, !joined)}
-          style={{ fontSize: 10.5, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: 'pointer', border: `1px solid ${joined ? BD : PB}`, background: joined ? BG2 : PL, color: joined ? T2 : PD }}>
+          style={{ fontSize: 10.5, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: 'pointer', border: 'none', background: joined ? BG2 : grad, color: joined ? T2 : 'white' }}>
           {joined ? 'Joined ✓' : 'Join'}
         </button>
       )} />
 
       <div className="scroll" style={{ flex: 1, overflowY: 'auto' }}>
-        <div style={{ fontSize: 11.5, color: T2, lineHeight: 1.4, padding: '14px 16px 12px', borderBottom: `1px solid ${BG2}` }}>{tile.purpose}</div>
+        {/* Hike-style gradient hero for the room itself */}
+        <div style={{ background: grad, padding: '18px 18px 20px', display: 'flex', alignItems: 'center', gap: 12, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: -24, right: -10, width: 90, height: 90, borderRadius: '50%', background: 'rgba(255,255,255,0.12)' }} />
+          <div style={{ width: 46, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, position: 'relative' }}>{tile.emoji}</div>
+          <div style={{ position: 'relative' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'white' }}>{tile.label}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.88)', marginTop: 2, lineHeight: 1.4 }}>{tile.purpose}</div>
+          </div>
+        </div>
 
         {tile.kind === 'exam_room' && !profile.exam && (
           <div style={{ background: PL, border: `1px solid ${PB}`, borderRadius: 14, padding: '14px 16px', margin: '14px 16px' }}>

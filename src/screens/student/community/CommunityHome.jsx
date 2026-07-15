@@ -1,12 +1,5 @@
 import { useState } from 'react'
-import { StatusBar, T1, T2, T3, BD, BG2, P, PL, PB, PD, G, GL, INK, timeAgo } from '../../shared'
-
-const TILE_ICON_BG = {
-  daily_dose: '#FFF0DC',
-  subject_room: '#E7ECFD',
-  exam_room: '#F3E8FD',
-  webinar_threads: '#DFF5EE',
-}
+import { StatusBar, T1, T2, T3, BG2, PL, PB, PD, G, INK, ROOM_GRADIENT, timeAgo } from '../../shared'
 
 function isEnrolled(tile, enrolledRoomKeys, exam) {
   if (tile.kind === 'exam_room') return exam ? enrolledRoomKeys.includes('exam_room_' + exam.toLowerCase()) : false
@@ -75,7 +68,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
             return (
               <div key={tile.key} onClick={() => onOpenTile(tile)}
                 style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: `1px solid ${BG2}`, cursor: 'pointer' }}>
-                <div style={{ width: 50, height: 50, borderRadius: '50%', background: TILE_ICON_BG[tile.kind] || BG2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{tile.emoji}</div>
+                <div style={{ width: 50, height: 50, borderRadius: '50%', background: ROOM_GRADIENT[tile.kind] || BG2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}>{tile.emoji}</div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
