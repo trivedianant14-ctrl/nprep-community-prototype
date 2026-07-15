@@ -1,21 +1,30 @@
 import { useState } from 'react'
-import { StatusBar, T1, T2, T3, BD, BG2, P, PL, PB, PD, INK, timeAgo } from '../../shared'
+import { StatusBar, T1, T2, T3, BD, BG2, P, PL, PB, PD, G, GL, INK, timeAgo } from '../../shared'
+
+const TILE_ICON_BG = {
+  daily_dose: '#FFF0DC',
+  subject_room: '#E7ECFD',
+  exam_room: '#F3E8FD',
+  webinar_threads: '#DFF5EE',
+}
 
 function isEnrolled(tile, enrolledRoomKeys, exam) {
   if (tile.kind === 'exam_room') return exam ? enrolledRoomKeys.includes('exam_room_' + exam.toLowerCase()) : false
   return enrolledRoomKeys.includes(tile.key)
 }
 
+function roomKeysFor(tile, exam) {
+  if (tile.kind === 'exam_room') return exam ? ['exam_room_' + exam.toLowerCase()] : []
+  return [tile.key]
+}
+
 export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpenTile, onOpenThreadFromNotification, onBack }) {
   const [showNotifs, setShowNotifs] = useState(false)
   const { roomTiles, profile, enrolledRoomKeys, exams, notifications, threads } = state
 
-  const threadCountFor = (tile) => {
-    if (tile.kind === 'exam_room') {
-      if (!profile.exam) return 0
-      return threads.filter(t => t.roomKey === 'exam_room_' + profile.exam.toLowerCase() && !t.hidden).length
-    }
-    return threads.filter(t => t.roomKey === tile.key && !t.hidden).length
+  const threadsFor = (tile) => {
+    const keys = roomKeysFor(tile, profile.exam)
+    return threads.filter(t => keys.includes(t.roomKey) && !t.hidden).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   }
 
   return (
@@ -32,9 +41,18 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
         </button>
       </div>
 
-      <div className="scroll" style={{ flex: 1, overflowY: 'auto', padding: '10px 16px 20px' }}>
+      <div className="scroll" style={{ flex: 1, overflowY: 'auto' }}>
+        {/* WhatsApp-Communities-style banner: the community itself, with rooms as its groups below */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: `8px solid ${BG2}` }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #1D5BF0, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>💬</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 800, color: INK }}>NPrep Community</div>
+            <div style={{ fontSize: 11, color: T2, marginTop: 2 }}>{roomTiles.length} rooms · 5,000+ active students</div>
+          </div>
+        </div>
+
         {!profile.exam && (
-          <div style={{ background: PL, border: `1px solid ${PB}`, borderRadius: 14, padding: '14px 16px', marginBottom: 16 }}>
+          <div style={{ background: PL, border: `1px solid ${PB}`, borderRadius: 14, padding: '14px 16px', margin: '14px 16px' }}>
             <div style={{ fontSize: 12.5, fontWeight: 800, color: PD, marginBottom: 3 }}>Which exam are you preparing for?</div>
             <div style={{ fontSize: 11, color: T2, marginBottom: 10, lineHeight: 1.4 }}>We'll auto-add you to that Exam Room for cutoffs, notifications and strategy.</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -45,20 +63,43 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div>
           {roomTiles.map(tile => {
             const joined = isEnrolled(tile, enrolledRoomKeys, profile.exam)
-            const count = threadCountFor(tile)
+            const roomKeys = roomKeysFor(tile, profile.exam)
+            const list = threadsFor(tile)
+            const last = list[0]
+            const engagement = list.reduce((sum, t) => sum + t.replyCount, 0)
+            const canJoin = roomKeys.length > 0
+
             return (
-              <button key={tile.key} onClick={() => onOpenTile(tile)} style={{ textAlign: 'left', background: BG2, border: `1px solid ${BD}`, borderRadius: 16, padding: '14px 14px 12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 24 }}>{tile.emoji}</span>
-                  {joined && <span style={{ fontSize: 8.5, fontWeight: 800, color: '#3B6D11', background: '#EAF3DE', border: '1px solid #97C459', borderRadius: 20, padding: '2px 7px' }}>JOINED</span>}
+              <div key={tile.key} onClick={() => onOpenTile(tile)}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: `1px solid ${BG2}`, cursor: 'pointer' }}>
+                <div style={{ width: 50, height: 50, borderRadius: '50%', background: TILE_ICON_BG[tile.kind] || BG2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{tile.emoji}</div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 800, color: INK }}>{tile.label}</span>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: T2, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {last ? last.title : tile.purpose}
+                  </div>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: INK }}>{tile.label}</div>
-                <div style={{ fontSize: 10, color: T2, lineHeight: 1.4 }}>{tile.purpose}</div>
-                <div style={{ fontSize: 9.5, color: T3, marginTop: 2 }}>{count} thread{count === 1 ? '' : 's'} · {tile.cadence}</div>
-              </button>
+
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, color: T3 }}>{last ? timeAgo(last.createdAt) : tile.cadence}</span>
+                  {!joined && canJoin ? (
+                    <button onClick={e => { e.stopPropagation(); onSetRoomJoined(roomKeys[0], true) }}
+                      style={{ fontSize: 10, fontWeight: 700, color: PD, background: PL, border: `1px solid ${PB}`, borderRadius: 20, padding: '3px 10px', cursor: 'pointer' }}>
+                      Join
+                    </button>
+                  ) : engagement > 0 ? (
+                    <span style={{ minWidth: 18, height: 18, borderRadius: 10, background: G, color: 'white', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{engagement}</span>
+                  ) : (
+                    <span style={{ width: 18, height: 18 }} />
+                  )}
+                </div>
+              </div>
             )
           })}
         </div>
