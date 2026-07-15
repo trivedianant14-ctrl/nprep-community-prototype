@@ -1,0 +1,106 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #1D5BF0;
+  --primary-light: #EAF0FE;
+  --primary-border: #A9C4FA;
+  --primary-dark: #12339B;
+  --green: #3B6D11;
+  --green-light: #EAF3DE;
+  --green-border: #97C459;
+  --amber: #633806;
+  --amber-light: #FAEEDA;
+  --amber-border: #FAC775;
+  --red: #791F1F;
+  --red-light: #FCEBEB;
+  --red-border: #F09595;
+  --text: #1a1a2e;
+  --text2: #5a5a78;
+  --text3: #9898b0;
+  --border: #e8e8f2;
+  --bg2: #f5f5fb;
+  --white: #ffffff;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #eeeef5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: inherit; cursor: pointer; }
+input, textarea { font-family: inherit; }
+
+.desktop-wrapper { width: 100%; height: 100%; }
+.phone-wrapper { width: 100%; height: 100%; position: relative; }
+
+.phone {
+  width: 100%;
+  max-width: 430px;
+  height: 100vh;
+  margin: 0 auto;
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 500px) {
+  #root { overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; padding: 24px 0 72px; }
+  .phone { min-height: 844px; max-height: 844px; border-radius: 40px; box-shadow: 0 8px 40px rgba(0,0,0,0.18); overflow: hidden; }
+}
+
+.scroll { flex: 1; overflow-y: auto; }
+.scroll::-webkit-scrollbar { width: 0; height: 0; }
+
+.overlay {
+  position: absolute; inset: 0; z-index: 50;
+  background: rgba(0,0,0,0.5);
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.sheet {
+  background: var(--white);
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 10px auto 0; flex-shrink: 0; }
+.sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+
+.btn-primary { background: var(--primary); color: white; border: none; border-radius: 50px; padding: 12px 28px; font-size: 15px; font-weight: 600; cursor: pointer; }
+.btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border); border-radius: 50px; padding: 12px 28px; font-size: 15px; font-weight: 500; cursor: pointer; }
+.btn-sm-primary { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-sm-outline { background: transparent; color: var(--text2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 500; cursor: pointer; }
+
+.screen-trans { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+
+@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes slideInLeft  { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+.screen-forward  { animation: slideInRight 0.26s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.screen-backward { animation: slideInLeft  0.26s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+
+@keyframes livePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,107,0.4); }
+  50%       { box-shadow: 0 0 0 5px rgba(255,107,107,0); }
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes popIn {
+  0%   { transform: scale(0.6); opacity: 0; }
+  70%  { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Non-phone flows (Moderator CMS) use a wider desktop-style container */
+.wide-panel {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--white);
+}
+@media (min-width: 1000px) {
+  #root:has(.wide-panel) { align-items: stretch; padding: 0; }
+  .wide-panel { min-height: 100vh; box-shadow: 0 0 40px rgba(0,0,0,0.06); }
+}
