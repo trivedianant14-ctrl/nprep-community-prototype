@@ -44,6 +44,39 @@ export function BackHeader({ onBack, title, right }) {
   )
 }
 
+// Reddit-style commenter avatar — a colored initial circle, hashed from the name so the
+// same author always lands on the same color without storing a real avatar per user.
+const AVATAR_COLORS = [
+  { bg: PL, fg: PD },
+  { bg: '#EEF0FE', fg: '#4338CA' },
+  { bg: GL, fg: G },
+  { bg: AL, fg: A },
+  { bg: RL, fg: R },
+  { bg: '#FDEEE7', fg: '#B9490A' },
+]
+function avatarColor(name) {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0
+  return AVATAR_COLORS[h % AVATAR_COLORS.length]
+}
+export function Avatar({ name, size = 28 }) {
+  const c = avatarColor(name || '?')
+  const initial = (name || '?').trim().charAt(0).toUpperCase() || '?'
+  return (
+    <span style={{ width: size, height: size, borderRadius: '50%', background: c.bg, color: c.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.42, fontWeight: 800, flexShrink: 0 }}>
+      {initial}
+    </span>
+  )
+}
+
+export function CommentIcon({ size = 13, color = T2 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+    </svg>
+  )
+}
+
 export function Chip({ children, tone = 'default', ...props }) {
   const tones = {
     default: { bg: BG2, fg: T2, border: BD },
