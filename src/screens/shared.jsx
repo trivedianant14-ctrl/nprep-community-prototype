@@ -118,6 +118,46 @@ export function CommentIcon({ size = 13, color = T2 }) {
   )
 }
 
+// Instagram-style single heart — outline when not liked, filled coral when liked, with a
+// light pop-scale on the liked state so the tap reads as an action, not just a toggle.
+export function HeartIcon({ size = 15, liked, color = T2 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={liked ? '#FF3B5C' : 'none'} stroke={liked ? '#FF3B5C' : color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"
+      style={{ transform: liked ? 'scale(1.08)' : 'scale(1)', transition: 'transform 0.15s cubic-bezier(0.34,1.56,0.64,1)' }}>
+      <path d="M20.8 8.6c0-3-2.2-5.4-5-5.4-1.9 0-3.6 1.1-4.6 2.9C10.2 4.3 8.5 3.2 6.6 3.2c-2.8 0-5 2.4-5 5.4 0 6.4 9.6 11.8 9.6 11.8s9.6-5.4 9.6-11.8z"/>
+    </svg>
+  )
+}
+
+export function ShareIcon({ size = 15, color = T2 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+      <line x1="8.6" y1="10.6" x2="15.4" y2="6.4"/><line x1="8.6" y1="13.4" x2="15.4" y2="17.6"/>
+    </svg>
+  )
+}
+
+export function LikeButton({ liked, count, onToggle, size = 15 }) {
+  return (
+    <button onClick={onToggle} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px' }}>
+      <HeartIcon size={size} liked={liked} />
+      <span style={{ fontSize: 11, fontWeight: 700, color: liked ? '#FF3B5C' : T2 }}>{count > 0 ? count : 'Like'}</span>
+    </button>
+  )
+}
+
+// Native share sheet when available (mobile browsers), clipboard-copy fallback otherwise —
+// resolves to { copied: true } so callers can show a brief "Link copied" confirmation.
+export async function shareThread(thread) {
+  const url = `${window.location.origin}${window.location.pathname}#thread-${thread.id}`
+  const shareData = { title: thread.title, text: thread.title, url }
+  if (navigator.share) {
+    try { await navigator.share(shareData); return { copied: false } } catch { /* user cancelled */ return { copied: false } }
+  }
+  try { await navigator.clipboard.writeText(url); return { copied: true } } catch { return { copied: false } }
+}
+
 export function Chip({ children, tone = 'default', ...props }) {
   const tones = {
     default: { bg: BG2, fg: T2, border: BD },

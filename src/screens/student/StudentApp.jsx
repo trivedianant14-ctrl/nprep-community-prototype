@@ -5,7 +5,7 @@ import RoomView from './community/RoomView'
 import ThreadDetail from './community/ThreadDetail'
 import { T1, T3, P, BD } from '../shared'
 
-export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoined, onPostReply, onVote, onExit }) {
+export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoined, onPostReply, onVote, onLikeThread, onLikeReply, onExit }) {
   const [screen, setScreen] = useState('home') // home | community | room | thread
   const [activeTile, setActiveTile] = useState(null)
   const [activeThreadId, setActiveThreadId] = useState(null)
@@ -20,6 +20,9 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
 
   const goHome = () => setScreen('home')
   const goCommunity = () => setScreen('community')
+  // ChannelWheel switch — jumps straight into the new room's thread list without a popup
+  // and without detouring back through the Community landing screen.
+  const switchRoom = (tile) => { setActiveTile(tile); setScreen('room') }
 
   return (
     <div className="phone">
@@ -44,6 +47,7 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             onSetExam={onSetExam}
             onSetRoomJoined={onSetRoomJoined}
             onOpenThread={openThread}
+            onSwitchRoom={switchRoom}
             onBack={() => setScreen('community')}
           />
         )}
@@ -53,6 +57,9 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             threadId={activeThreadId}
             onPostReply={onPostReply}
             onVote={onVote}
+            onLikeThread={onLikeThread}
+            onLikeReply={onLikeReply}
+            onSwitchRoom={switchRoom}
             onBack={() => setScreen(activeTile ? 'room' : 'community')}
           />
         )}

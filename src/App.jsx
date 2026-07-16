@@ -53,6 +53,8 @@ export default function App() {
   const postReply = async (threadId, body, asPeer) => { await api(`/threads/${threadId}/replies`, { method: 'POST', body: { body, asPeer } }); await refresh() }
   const setReplyHidden = async (id, hidden) => { await api(`/replies/${id}`, { method: 'PATCH', body: { hidden } }); await refresh() }
   const vote = async (threadId, optionId) => { await api(`/threads/${threadId}/vote`, { method: 'POST', body: { optionId } }); await refresh() }
+  const likeThread = async (threadId) => { await api(`/threads/${threadId}/like`, { method: 'POST' }); await refresh() }
+  const likeReply = async (replyId) => { await api(`/replies/${replyId}/like`, { method: 'POST' }); await refresh() }
 
   const exitToLanding = () => setTopScreen('landing')
 
@@ -77,6 +79,8 @@ export default function App() {
             onSetRoomJoined={setRoomJoined}
             onPostReply={postReply}
             onVote={vote}
+            onLikeThread={likeThread}
+            onLikeReply={likeReply}
             onExit={exitToLanding}
           />
         </div>

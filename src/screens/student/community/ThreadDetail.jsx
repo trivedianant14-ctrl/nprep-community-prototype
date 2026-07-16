@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { BackHeader, T1, T2, T3, BD, BG2, P, PL, PB, PD, INK, GradientAvatar, SELF_THEME, bubbleThemeFor, roomKindFromKey, ROOM_GRADIENT, CommentIcon, timeAgo } from '../../shared'
+import { BackHeader, T1, T2, T3, BD, BG2, P, PL, PB, PD, INK, GradientAvatar, SELF_THEME, bubbleThemeFor, roomKindFromKey, ROOM_GRADIENT, CommentIcon, HeartIcon, LikeButton, ShareIcon, shareThread, timeAgo } from '../../shared'
+import ChannelWheel from './ChannelWheel'
 
-export default function ThreadDetail({ state, threadId, onPostReply, onVote, onBack }) {
+export default function ThreadDetail({ state, threadId, onPostReply, onVote, onLikeThread, onLikeReply, onSwitchRoom, onBack }) {
   const [draft, setDraft] = useState('')
+  const [shareMsg, setShareMsg] = useState('')
   const thread = state.threads.find(t => t.id === threadId || String(t.id) === String(threadId))
   const replies = state.repliesByThread[threadId] || state.repliesByThread[String(threadId)] || []
 
@@ -21,12 +23,23 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onB
     setDraft('')
   }
 
+  const share = async () => {
+    const result = await shareThread(thread)
+    if (result.copied) {
+      setShareMsg('Link copied')
+      setTimeout(() => setShareMsg(''), 1800)
+    }
+  }
+
   const poll = thread.poll
   const voted = poll && poll.myOptionId != null
   const grad = ROOM_GRADIENT[roomKindFromKey(thread.roomKey)]
+  const currentIndex = Math.max(0, state.roomTiles.findIndex(t => t.kind === roomKindFromKey(thread.roomKey)))
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'white' }}>
+    <div style={{ display: 'flex', height: '100%', background: 'white' }}>
+      <ChannelWheel rooms={state.roomTiles} currentIndex={currentIndex} onSwitch={onSwitchRoom} />
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', flex: 1, minWidth: 0 }}>
       <BackHeader onBack={onBack} title="Thread" />
 
       <div className="scroll" style={{ flex: 1, overflowY: 'auto' }}>
@@ -53,6 +66,19 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onB
               Archived — no longer accepting replies
             </div>
           )}
+        </div>
+
+        {/* Action row — Instagram/Facebook-style: like, comment count, share, all on the post itself */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '4px 16px 10px', borderBottom: `1px solid ${BG2}` }}>
+          <LikeButton liked={thread.likedByMe} count={thread.likeCount} onToggle={() => onLikeThread(thread.id)} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <CommentIcon size={14} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{replies.length}</span>
+          </div>
+          <button onClick={share} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', marginLeft: 'auto' }}>
+            <ShareIcon />
+            <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{shareMsg || 'Share'}</span>
+          </button>
         </div>
 
         {poll && (
@@ -109,7 +135,13 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onB
                     {!isSelf && <div style={{ fontSize: 11, fontWeight: 800, color: T1, marginBottom: 2 }}>{r.authorName}</div>}
                     <div style={{ fontSize: 12.5, color: T1, lineHeight: 1.5 }}>{r.body}</div>
                   </div>
-                  <div style={{ fontSize: 9.5, color: T3, marginTop: 3, textAlign: isSelf ? 'right' : 'left', padding: '0 4px' }}>{timeAgo(r.createdAt)}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3, padding: '0 4px', flexDirection: isSelf ? 'row-reverse' : 'row' }}>
+                    <span style={{ fontSize: 9.5, color: T3 }}>{timeAgo(r.createdAt)}</span>
+                    <button onClick={() => onLikeReply(r.id)} style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                      <HeartIcon size={11} liked={r.likedByMe} />
+                      {r.likeCount > 0 && <span style={{ fontSize: 9.5, fontWeight: 700, color: r.likedByMe ? '#FF3B5C' : T3 }}>{r.likeCount}</span>}
+                    </button>
+                  </div>
                 </div>
               </div>
             )
@@ -128,6 +160,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onB
           </button>
         </div>
       )}
+      </div>
     </div>
   )
 }

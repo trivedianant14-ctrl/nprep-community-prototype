@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
   const db = sql()
 
-  const [profileRows, enrollmentRows, threads, replies, polls, pollOptions, pollVotes, notifications, questions] = await Promise.all([
+  const [profileRows, enrollmentRows, threads, replies, polls, pollOptions, pollVotes, notifications, questions, threadLikes, replyLikes] = await Promise.all([
     db`SELECT exam, onboarded FROM profiles WHERE student_key = ${DEMO_STUDENT_KEY}`,
     db`SELECT room_key FROM enrollments WHERE student_key = ${DEMO_STUDENT_KEY}`,
     db`SELECT * FROM threads ORDER BY created_at DESC`,
@@ -16,7 +16,22 @@ export default async function handler(req, res) {
     db`SELECT * FROM poll_votes`,
     db`SELECT * FROM notifications WHERE student_key = ${DEMO_STUDENT_KEY} ORDER BY created_at DESC LIMIT 30`,
     db`SELECT * FROM questions ORDER BY id`,
+    db`SELECT thread_id, student_key FROM thread_likes`,
+    db`SELECT reply_id, student_key FROM reply_likes`,
   ])
+
+  const threadLikeCounts = {}
+  const myThreadLikes = new Set()
+  for (const l of threadLikes) {
+    threadLikeCounts[l.thread_id] = (threadLikeCounts[l.thread_id] || 0) + 1
+    if (l.student_key === DEMO_STUDENT_KEY) myThreadLikes.add(l.thread_id)
+  }
+  const replyLikeCounts = {}
+  const myReplyLikes = new Set()
+  for (const l of replyLikes) {
+    replyLikeCounts[l.reply_id] = (replyLikeCounts[l.reply_id] || 0) + 1
+    if (l.student_key === DEMO_STUDENT_KEY) myReplyLikes.add(l.reply_id)
+  }
 
   const repliesByThread = {}
   for (const r of replies) (repliesByThread[r.thread_id] ??= []).push(r)
@@ -42,11 +57,13 @@ export default async function handler(req, res) {
         options: opts.map(o => ({ id: o.id, label: o.label, voteCount: votes.filter(v => v.option_id === o.id).length })),
       }
     }
-    return serializeThread(t, (repliesByThread[t.id] || []).length, pollOut)
+    return serializeThread(t, (repliesByThread[t.id] || []).length, pollOut, threadLikeCounts[t.id] || 0, myThreadLikes.has(t.id))
   })
 
   const repliesOut = {}
-  for (const [threadId, list] of Object.entries(repliesByThread)) repliesOut[threadId] = list.map(serializeReply)
+  for (const [threadId, list] of Object.entries(repliesByThread)) {
+    repliesOut[threadId] = list.map(r => serializeReply(r, replyLikeCounts[r.id] || 0, myReplyLikes.has(r.id)))
+  }
 
   res.status(200).json({
     rooms: ROOMS,

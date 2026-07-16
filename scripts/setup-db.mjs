@@ -78,6 +78,20 @@ CREATE TABLE IF NOT EXISTS notifications (
   body TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS thread_likes (
+  thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+  student_key TEXT NOT NULL,
+  liked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (thread_id, student_key)
+);
+
+CREATE TABLE IF NOT EXISTS reply_likes (
+  reply_id INTEGER NOT NULL REFERENCES replies(id) ON DELETE CASCADE,
+  student_key TEXT NOT NULL,
+  liked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (reply_id, student_key)
+);
 `
 
 const now = Date.now()
@@ -100,7 +114,7 @@ async function main() {
   }
 
   console.log('Clearing existing demo data...')
-  await sql.query('TRUNCATE notifications, poll_votes, poll_options, polls, replies, threads, questions, enrollments, profiles RESTART IDENTITY CASCADE')
+  await sql.query('TRUNCATE thread_likes, reply_likes, notifications, poll_votes, poll_options, polls, replies, threads, questions, enrollments, profiles RESTART IDENTITY CASCADE')
 
   console.log('Seeding questions...')
   const qIds = []

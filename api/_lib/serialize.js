@@ -1,4 +1,4 @@
-export function serializeThread(t, replyCount, poll) {
+export function serializeThread(t, replyCount, poll, likeCount = 0, likedByMe = false) {
   return {
     id: t.id,
     roomKey: t.room_key,
@@ -12,10 +12,12 @@ export function serializeThread(t, replyCount, poll) {
     replyCount,
     poll,
     questionId: t.question_id,
+    likeCount,
+    likedByMe,
   }
 }
 
-export function serializeReply(r) {
+export function serializeReply(r, likeCount = 0, likedByMe = false) {
   return {
     id: r.id,
     threadId: r.thread_id,
@@ -24,5 +26,7 @@ export function serializeReply(r) {
     body: r.hidden ? '' : r.body,
     hidden: r.hidden,
     createdAt: r.created_at,
+    likeCount: r.hidden ? 0 : likeCount,
+    likedByMe: r.hidden ? false : likedByMe,
   }
 }

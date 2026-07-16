@@ -1,4 +1,5 @@
-import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, CommentIcon, ROOM_GRADIENT, timeAgo } from '../../shared'
+import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, CommentIcon, HeartIcon, ROOM_GRADIENT, timeAgo } from '../../shared'
+import ChannelWheel from './ChannelWheel'
 
 function Flair({ children, tone }) {
   const tones = {
@@ -11,16 +12,19 @@ function Flair({ children, tone }) {
   return <span style={{ fontSize: 9.5, fontWeight: 800, color: 'white', background: grad, borderRadius: 20, padding: '3px 9px' }}>{children}</span>
 }
 
-export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOpenThread, onBack }) {
-  const { profile, enrolledRoomKeys, exams, threads } = state
+export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOpenThread, onSwitchRoom, onBack }) {
+  const { profile, enrolledRoomKeys, exams, threads, roomTiles } = state
 
   const roomKey = tile.kind === 'exam_room' ? (profile.exam ? 'exam_room_' + profile.exam.toLowerCase() : null) : tile.key
   const joined = roomKey ? enrolledRoomKeys.includes(roomKey) : false
   const list = roomKey ? threads.filter(t => t.roomKey === roomKey && !t.hidden).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : []
   const grad = ROOM_GRADIENT[tile.kind]
+  const currentIndex = Math.max(0, roomTiles.findIndex(t => t.key === tile.key))
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'white' }}>
+    <div style={{ display: 'flex', height: '100%', background: 'white' }}>
+      <ChannelWheel rooms={roomTiles} currentIndex={currentIndex} onSwitch={onSwitchRoom} />
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', flex: 1, minWidth: 0 }}>
       <BackHeader onBack={onBack} title={tile.label} right={roomKey && (
         <button onClick={() => onSetRoomJoined(roomKey, !joined)}
           style={{ fontSize: 10.5, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: 'pointer', border: 'none', background: joined ? BG2 : grad, color: joined ? T2 : 'white' }}>
@@ -68,13 +72,22 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
               </div>
               <div style={{ fontSize: 14, fontWeight: 700, color: INK, lineHeight: 1.4 }}>{t.title}</div>
               {t.body && <div style={{ fontSize: 11.5, color: T2, lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.body}</div>}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                <CommentIcon />
-                <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{t.replyCount} comment{t.replyCount === 1 ? '' : 's'}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <CommentIcon />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{t.replyCount} comment{t.replyCount === 1 ? '' : 's'}</span>
+                </div>
+                {t.likeCount > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <HeartIcon size={12} liked={t.likedByMe} />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: t.likedByMe ? '#FF3B5C' : T2 }}>{t.likeCount}</span>
+                  </div>
+                )}
               </div>
             </button>
           )
         })}
+      </div>
       </div>
     </div>
   )
