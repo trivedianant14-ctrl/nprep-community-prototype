@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { P, PL, PB, PD, T1, T2, T3, BD, BG2, G, GL, GB, R, RL, RB, timeAgo, ContributorBadge, contributorTier, PdfChip, uploadPdf } from '../shared'
+import { P, PL, PB, PD, T1, T2, T3, BD, BG2, G, GL, GB, R, RL, RB, timeAgo, ContributorBadge, contributorTier, AttachmentPreview, uploadAttachment, ATTACHMENT_ACCEPT } from '../shared'
 
 export default function CommunityCMS({ state, onCreateThread, onSetThreadHidden, onSetReplyHidden, onPostReply, onNprepLikeReply, onTogglePinReply, onApproveContributor, onExit }) {
   const [tab, setTab] = useState('create') // create | moderate | contributors
@@ -28,15 +28,18 @@ export default function CommunityCMS({ state, onCreateThread, onSetThreadHidden,
   )
 }
 
+const DAILY_DOSE_TAG = 'Current Affairs'
+
 function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
   const [roomKey, setRoomKey] = useState(rooms[0].key)
+  const [dailyPostType, setDailyPostType] = useState('qotd') // 'qotd' | 'currentAffairs' — Daily Dose only
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [subjectTag, setSubjectTag] = useState(subjectTags[0])
   const [questionId, setQuestionId] = useState('')
   const [addPoll, setAddPoll] = useState(false)
   const [pollOptions, setPollOptions] = useState(['', ''])
-  const [attachment, setAttachment] = useState(null) // { url, name } | null
+  const [attachment, setAttachment] = useState(null) // { url, name, type } | null
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [done, setDone] = useState(false)
@@ -44,18 +47,18 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
   const freeTierQuestions = questions.filter(q => q.freeTier)
   const isDailyDose = roomKey === 'daily_dose'
   const isSubjectRoom = roomKey === 'subject_room'
-  const isWebinar = roomKey === 'webinar_threads'
+  const isCurrentAffairs = isDailyDose && dailyPostType === 'currentAffairs'
 
-  const canSubmit = title.trim() && (!isDailyDose || questionId) && (!addPoll || pollOptions.filter(o => o.trim()).length >= 2)
+  const canSubmit = title.trim() && (!isDailyDose || isCurrentAffairs || questionId) && (!addPoll || pollOptions.filter(o => o.trim()).length >= 2)
 
-  const pickPdf = async (e) => {
+  const pickAttachment = async (e) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
     setUploadError('')
     setUploading(true)
     try {
-      setAttachment(await uploadPdf(file))
+      setAttachment(await uploadAttachment(file))
     } catch (err) {
       setUploadError(err.message || 'Upload failed')
     } finally {
@@ -68,11 +71,12 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
       roomKey,
       title: title.trim(),
       body: body.trim(),
-      subjectTag: isSubjectRoom ? subjectTag : null,
-      questionId: isDailyDose ? Number(questionId) : null,
+      subjectTag: isSubjectRoom ? subjectTag : isCurrentAffairs ? DAILY_DOSE_TAG : null,
+      questionId: isDailyDose && !isCurrentAffairs ? Number(questionId) : null,
       pollOptions: addPoll ? pollOptions.filter(o => o.trim()) : null,
-      attachmentUrl: isWebinar ? attachment?.url : null,
-      attachmentName: isWebinar ? attachment?.name : null,
+      attachmentUrl: attachment?.url || null,
+      attachmentName: attachment?.name || null,
+      attachmentType: attachment?.type || null,
     })
     setTitle(''); setBody(''); setQuestionId(''); setAddPoll(false); setPollOptions(['', '']); setAttachment(null)
     setDone(true)
@@ -87,6 +91,20 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
       </select>
 
       {isDailyDose && (
+        <>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: T2, margin: '18px 0 6px' }}>POST TYPE</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[['qotd', 'Question of the Day'], ['currentAffairs', 'Current Affairs']].map(([id, label]) => (
+              <button key={id} onClick={() => setDailyPostType(id)}
+                style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${dailyPostType === id ? PB : BD}`, background: dailyPostType === id ? PL : 'white', color: dailyPostType === id ? PD : T2, fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {isDailyDose && !isCurrentAffairs && (
         <>
           <div style={{ fontSize: 12.5, fontWeight: 800, color: T2, margin: '18px 0 6px' }}>FREE-TIER QUESTION (CMS filter — paid questions never appear here)</div>
           <select value={questionId} onChange={e => setQuestionId(e.target.value)} style={sel}>
@@ -127,23 +145,19 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
         </div>
       )}
 
-      {isWebinar && (
-        <>
-          <div style={{ fontSize: 12.5, fontWeight: 800, color: T2, margin: '18px 0 6px' }}>RELATED CONTENT (optional PDF — session notes, slides…)</div>
-          {attachment ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <PdfChip url={attachment.url} name={attachment.name} />
-              <button onClick={() => setAttachment(null)} style={{ ...smBtn }}>Remove</button>
-            </div>
-          ) : (
-            <label style={{ ...smBtn, display: 'inline-flex', alignItems: 'center', cursor: uploading ? 'default' : 'pointer' }}>
-              <input type="file" accept="application/pdf" onChange={pickPdf} disabled={uploading} style={{ display: 'none' }} />
-              {uploading ? 'Uploading…' : '📎 Attach PDF'}
-            </label>
-          )}
-          {uploadError && <div style={{ fontSize: 11, color: '#791F1F', marginTop: 6 }}>{uploadError}</div>}
-        </>
+      <div style={{ fontSize: 12.5, fontWeight: 800, color: T2, margin: '18px 0 6px' }}>ATTACHMENT (optional — image, video, or PDF)</div>
+      {attachment ? (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+          <div style={{ maxWidth: 260 }}><AttachmentPreview url={attachment.url} name={attachment.name} type={attachment.type} /></div>
+          <button onClick={() => setAttachment(null)} style={{ ...smBtn, flexShrink: 0 }}>Remove</button>
+        </div>
+      ) : (
+        <label style={{ ...smBtn, display: 'inline-flex', alignItems: 'center', cursor: uploading ? 'default' : 'pointer' }}>
+          <input type="file" accept={ATTACHMENT_ACCEPT} onChange={pickAttachment} disabled={uploading} style={{ display: 'none' }} />
+          {uploading ? 'Uploading…' : '📎 Attach media'}
+        </label>
       )}
+      {uploadError && <div style={{ fontSize: 11, color: '#791F1F', marginTop: 6 }}>{uploadError}</div>}
 
       <button onClick={submit} disabled={!canSubmit} style={{ marginTop: 22, background: canSubmit ? P : BD, color: 'white', border: 'none', borderRadius: 24, padding: '12px 28px', fontSize: 13.5, fontWeight: 700, cursor: canSubmit ? 'pointer' : 'default' }}>
         Post Thread

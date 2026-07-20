@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS threads (
   author_name TEXT,
   attachment_url TEXT,
   attachment_name TEXT,
+  attachment_type TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -73,6 +74,7 @@ CREATE TABLE IF NOT EXISTS replies (
   pinned_at TIMESTAMPTZ,
   attachment_url TEXT,
   attachment_name TEXT,
+  attachment_type TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -193,15 +195,22 @@ async function main() {
   `
 
   // Webinar Threads — one still active, one auto-archived (48h past its session). Each
-  // carries a sample "related content" PDF so the attach-PDF feature has an example on
+  // carries a sample "related content" PDF so the attach-media feature has an example on
   // first load, not just an empty affordance.
   await sql`
-    INSERT INTO threads (room_key, title, body, archive_at, created_at, attachment_url, attachment_name)
-    VALUES ('webinar_threads', 'Live now: MCQ Discussion — Community Health High-Yield', 'Drop your questions here during the session.', ${at(20 * HOUR)}, ${at(-4 * HOUR)}, 'https://azsaiwirsh6zu76h.public.blob.vercel-storage.com/mcq-discussion-notes.pdf', 'mcq-discussion-notes.pdf')
+    INSERT INTO threads (room_key, title, body, archive_at, created_at, attachment_url, attachment_name, attachment_type)
+    VALUES ('webinar_threads', 'Live now: MCQ Discussion — Community Health High-Yield', 'Drop your questions here during the session.', ${at(20 * HOUR)}, ${at(-4 * HOUR)}, 'https://azsaiwirsh6zu76h.public.blob.vercel-storage.com/mcq-discussion-notes.pdf', 'mcq-discussion-notes.pdf', 'pdf')
   `
   await sql`
-    INSERT INTO threads (room_key, title, body, archive_at, created_at, attachment_url, attachment_name)
-    VALUES ('webinar_threads', 'Recap: Topper Journey session', 'Session wrapped — thanks for joining! This thread is now archived.', ${at(-1 * HOUR)}, ${at(-49 * HOUR)}, 'https://azsaiwirsh6zu76h.public.blob.vercel-storage.com/topper-journey-recap.pdf', 'topper-journey-recap.pdf')
+    INSERT INTO threads (room_key, title, body, archive_at, created_at, attachment_url, attachment_name, attachment_type)
+    VALUES ('webinar_threads', 'Recap: Topper Journey session', 'Session wrapped — thanks for joining! This thread is now archived.', ${at(-1 * HOUR)}, ${at(-49 * HOUR)}, 'https://azsaiwirsh6zu76h.public.blob.vercel-storage.com/topper-journey-recap.pdf', 'topper-journey-recap.pdf', 'pdf')
+  `
+
+  // Daily Dose can also carry a "Current Affairs" post (no linked question) — a distinct
+  // subjectTag flair reused from Subject Room's tagging mechanism, no schema needed.
+  await sql`
+    INSERT INTO threads (room_key, title, body, subject_tag, created_at)
+    VALUES ('daily_dose', 'Current Affairs: New national nursing curriculum rollout', 'The health ministry announced a phased rollout of the revised B.Sc Nursing curriculum starting next academic year — expect NORCET/AIIMS questions to reference the updated syllabus.', 'Current Affairs', ${at(-6 * HOUR)})
   `
 
   console.log('Done.')

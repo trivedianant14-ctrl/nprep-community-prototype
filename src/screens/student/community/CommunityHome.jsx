@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { StatusBar, T1, T2, T3, BG2, PL, PB, PD, G, INK, ROOM_GRADIENT, roomKindFromKey, LikeButton, CommentIcon, ShareIcon, shareThread, PdfChip, timeAgo } from '../../shared'
+import { StatusBar, T1, T2, T3, BG2, PL, PB, PD, G, INK, ROOM_GRADIENT, roomKindFromKey, LikeButton, CommentIcon, ShareIcon, shareThread, AttachmentPreview, timeAgo } from '../../shared'
 
 function isEnrolled(tile, enrolledRoomKeys, exam) {
   if (tile.kind === 'exam_room') return exam ? enrolledRoomKeys.includes('exam_room_' + exam.toLowerCase()) : false
@@ -114,7 +114,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
                   </div>
                   <div style={{ fontSize: 13.5, fontWeight: 700, color: INK, lineHeight: 1.4 }}>{t.title}</div>
                   {t.body && <div style={{ fontSize: 11.5, color: T2, lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.body}</div>}
-                  {t.attachmentUrl && <div onClick={e => e.stopPropagation()}><PdfChip url={t.attachmentUrl} name={t.attachmentName} /></div>}
+                  {t.attachmentUrl && <div onClick={e => e.stopPropagation()}><AttachmentPreview url={t.attachmentUrl} name={t.attachmentName} type={t.attachmentType} /></div>}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 2 }}>
                     <LikeButton liked={t.likedByMe} count={t.likeCount} onToggle={e => { e.stopPropagation(); onLikeThread(t.id) }} size={13} />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>

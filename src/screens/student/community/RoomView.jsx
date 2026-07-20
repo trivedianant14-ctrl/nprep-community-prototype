@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, CommentIcon, LikeButton, ROOM_GRADIENT, ShareIcon, shareThread, PdfChip, timeAgo } from '../../shared'
+import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, CommentIcon, LikeButton, ROOM_GRADIENT, ShareIcon, shareThread, AttachmentPreview, timeAgo } from '../../shared'
 import ChannelWheel from './ChannelWheel'
 
 const CONTRIBUTOR_POST_KINDS = ['subject_room', 'exam_room']
@@ -103,7 +103,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
               </div>
               <div style={{ fontSize: 14, fontWeight: 700, color: INK, lineHeight: 1.4 }}>{t.title}</div>
               {t.body && <div style={{ fontSize: 11.5, color: T2, lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.body}</div>}
-              {t.attachmentUrl && <div onClick={e => e.stopPropagation()}><PdfChip url={t.attachmentUrl} name={t.attachmentName} /></div>}
+              {t.attachmentUrl && <div onClick={e => e.stopPropagation()}><AttachmentPreview url={t.attachmentUrl} name={t.attachmentName} type={t.attachmentType} /></div>}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 2 }}>
                 <LikeButton liked={t.likedByMe} count={t.likeCount} onToggle={e => { e.stopPropagation(); onLikeThread(t.id) }} size={13} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>

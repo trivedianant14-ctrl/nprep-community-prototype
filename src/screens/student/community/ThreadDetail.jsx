@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, GradientAvatar, HeartIcon, bubbleThemeFor, roomKindFromKey, ROOM_GRADIENT, CommentIcon, LikeButton, ShareIcon, shareThread, timeAgo, ContributorBadge, contributorTier, NPrepMark, OPBadge, PaperclipIcon, PdfChip, uploadPdf } from '../../shared'
+import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, GradientAvatar, HeartIcon, bubbleThemeFor, roomKindFromKey, ROOM_GRADIENT, CommentIcon, LikeButton, ShareIcon, shareThread, timeAgo, ContributorBadge, contributorTier, NPrepMark, OPBadge, PaperclipIcon, AttachmentPreview, uploadAttachment, ATTACHMENT_ACCEPT } from '../../shared'
 import ChannelWheel from './ChannelWheel'
 
 export default function ThreadDetail({ state, threadId, onPostReply, onVote, onLikeThread, onLikeReply, onSwitchRoom, onBack }) {
   const [draft, setDraft] = useState('')
   const [shareMsg, setShareMsg] = useState('')
-  const [attachment, setAttachment] = useState(null) // { url, name } | null — pending PDF for the next reply
+  const [attachment, setAttachment] = useState(null) // { url, name, type } | null — pending media for the next reply
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [replyTo, setReplyTo] = useState(null) // { id, authorName } | null — reply target, any depth
@@ -81,14 +81,14 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
     setAttachment(null)
   }
 
-  const pickPdf = async (e) => {
+  const pickAttachment = async (e) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
     setUploadError('')
     setUploading(true)
     try {
-      setAttachment(await uploadPdf(file))
+      setAttachment(await uploadAttachment(file))
     } catch (err) {
       setUploadError(err.message || 'Upload failed')
     } finally {
@@ -134,7 +134,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
 
         <div style={{ padding: '16px 18px 4px' }}>
           {thread.body && <div style={{ fontSize: 13, color: T1, lineHeight: 1.6, marginBottom: thread.attachmentUrl ? 10 : 0 }}>{thread.body}</div>}
-          <PdfChip url={thread.attachmentUrl} name={thread.attachmentName} />
+          <AttachmentPreview url={thread.attachmentUrl} name={thread.attachmentName} type={thread.attachmentType} />
         </div>
 
         {/* Action row — Instagram/Facebook-style: like, comment count, share, all on the post itself */}
@@ -228,12 +228,12 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
             </div>
           )}
           {isWebinar && (attachment || uploading || uploadError) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px 0' }}>
-              {uploading && <span style={{ fontSize: 11, color: T2 }}>Uploading PDF…</span>}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 12px 0' }}>
+              {uploading && <span style={{ fontSize: 11, color: T2 }}>Uploading…</span>}
               {uploadError && <span style={{ fontSize: 11, color: '#791F1F' }}>{uploadError}</span>}
               {attachment && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <PdfChip url={attachment.url} name={attachment.name} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                  <div style={{ maxWidth: 200 }}><AttachmentPreview url={attachment.url} name={attachment.name} type={attachment.type} /></div>
                   <button onClick={() => setAttachment(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T3, fontSize: 13, padding: 2 }}>✕</button>
                 </div>
               )}
@@ -242,12 +242,12 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
           <div style={{ padding: '10px 12px', display: 'flex', gap: 8, alignItems: 'center' }}>
             {isWebinar && (
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: '50%', background: BG2, cursor: uploading ? 'default' : 'pointer', flexShrink: 0 }}>
-                <input type="file" accept="application/pdf" onChange={pickPdf} disabled={uploading} style={{ display: 'none' }} />
+                <input type="file" accept={ATTACHMENT_ACCEPT} onChange={pickAttachment} disabled={uploading} style={{ display: 'none' }} />
                 <PaperclipIcon color={T2} />
               </label>
             )}
             <input value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()}
-              placeholder={replyTo ? `Reply to ${replyTo.authorName}…` : isWebinar ? 'Join the conversation, or attach a PDF…' : 'Join the conversation…'}
+              placeholder={replyTo ? `Reply to ${replyTo.authorName}…` : isWebinar ? 'Join the conversation, or attach media…' : 'Join the conversation…'}
               style={{ flex: 1, border: `1.5px solid ${BD}`, borderRadius: 22, padding: '10px 15px', fontSize: 12.5, outline: 'none' }} />
             <button onClick={submit} disabled={!draft.trim()}
               style={{ background: draft.trim() ? grad : BD, color: 'white', border: 'none', borderRadius: '50%', width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: draft.trim() ? 'pointer' : 'default', flexShrink: 0 }}>
@@ -310,7 +310,7 @@ function CommentNode({ reply, depth, childrenMap, expandedIds, toggleExpand, onL
           {reply.pinned && <div style={{ fontSize: 9.5, fontWeight: 700, color: '#B96A00', marginTop: 2 }}>📌 Pinned by NPrep Team</div>}
           {reply.replyingToName && <div style={{ fontSize: 9.5, color: T3, marginTop: 2 }}>↳ replying to {reply.replyingToName}</div>}
           <div style={{ fontSize: 12.5, color: T1, lineHeight: 1.5, marginTop: 3 }}>{reply.body}</div>
-          {reply.attachmentUrl && <div style={{ marginTop: 6 }}><PdfChip url={reply.attachmentUrl} name={reply.attachmentName} /></div>}
+          {reply.attachmentUrl && <div style={{ marginTop: 6, maxWidth: 240 }}><AttachmentPreview url={reply.attachmentUrl} name={reply.attachmentName} type={reply.attachmentType} /></div>}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 4 }}>
             <button onClick={() => onLikeReply(reply.id)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
               <HeartIcon size={14} liked={reply.likedByMe} />

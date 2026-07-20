@@ -18,6 +18,7 @@ export function serializeThread(t, replyCount, poll, likeCount = 0, likedByMe = 
     authorName: t.author_name,
     attachmentUrl: t.attachment_url,
     attachmentName: t.attachment_name,
+    attachmentType: t.attachment_type,
   }
 }
 
@@ -38,5 +39,6 @@ export function serializeReply(r, likeCount = 0, likedByMe = false, replyingToNa
     likedByNPrepTeam: r.hidden ? false : likedByNPrepTeam,
     attachmentUrl: r.hidden ? null : r.attachment_url,
     attachmentName: r.hidden ? null : r.attachment_name,
+    attachmentType: r.hidden ? null : r.attachment_type,
   }
 }

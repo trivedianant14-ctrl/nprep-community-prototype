@@ -51,7 +51,7 @@ export default function App() {
   const createThread = async (payload) => { await api('/threads', { method: 'POST', body: payload }); await refresh() }
   const setThreadHidden = async (id, hidden) => { await api(`/threads/${id}`, { method: 'PATCH', body: { hidden } }); await refresh() }
   const postReply = async (threadId, body, asPeer, parentReplyId, attachment) => {
-    await api(`/threads/${threadId}/replies`, { method: 'POST', body: { body, asPeer, parentReplyId, attachmentUrl: attachment?.url, attachmentName: attachment?.name } })
+    await api(`/threads/${threadId}/replies`, { method: 'POST', body: { body, asPeer, parentReplyId, attachmentUrl: attachment?.url, attachmentName: attachment?.name, attachmentType: attachment?.type } })
     await refresh()
   }
   const setReplyHidden = async (id, hidden) => { await api(`/replies/${id}`, { method: 'PATCH', body: { hidden } }); await refresh() }

@@ -166,23 +166,48 @@ export function PaperclipIcon({ size = 15, color = T2 }) {
   )
 }
 
-const MAX_PDF_BYTES = 20 * 1024 * 1024
+const MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024
+export const ATTACHMENT_ACCEPT = 'image/*,video/*,application/pdf'
 
-// Uploads a PDF straight from the browser to Vercel Blob via a short-lived client token
-// (api/blob/upload.js issues it) — bypasses the function body-size limit a proxied upload
-// would hit. Used by the Webinar Threads attach button, both CMS-side and student replies.
-export async function uploadPdf(file) {
-  if (file.type !== 'application/pdf') throw new Error('Only PDF files can be attached')
-  if (file.size > MAX_PDF_BYTES) throw new Error('PDF must be under 20MB')
-  const { upload } = await import('@vercel/blob/client')
-  const blob = await upload(file.name, file, { access: 'public', handleUploadUrl: '/api/blob/upload' })
-  return { url: blob.url, name: file.name }
+function attachmentTypeFor(mime) {
+  if (mime.startsWith('image/')) return 'image'
+  if (mime.startsWith('video/')) return 'video'
+  if (mime === 'application/pdf') return 'pdf'
+  return null
 }
 
-// Small tappable chip for a PDF attachment — shown on a thread or a reply. Opens the file
-// in a new tab (Vercel Blob URLs serve inline with the right content-type).
-export function PdfChip({ url, name }) {
+// Uploads an image/video/PDF straight from the browser to Vercel Blob via a short-lived
+// client token (api/blob/upload.js issues it) — bypasses the function body-size limit a
+// proxied upload would hit. Shared by the CMS attachment field (any room) and the student
+// reply composer in Webinar Threads.
+export async function uploadAttachment(file) {
+  const type = attachmentTypeFor(file.type)
+  if (!type) throw new Error('Only images, videos, or PDFs can be attached')
+  if (file.size > MAX_ATTACHMENT_BYTES) throw new Error('File must be under 100MB')
+  const { upload } = await import('@vercel/blob/client')
+  const blob = await upload(file.name, file, { access: 'public', handleUploadUrl: '/api/blob/upload' })
+  return { url: blob.url, name: file.name, type }
+}
+
+// Renders whatever kind of media is attached to a thread or reply — an inline image, an
+// inline video player, or a tappable PDF chip. `type` is the persisted attachment_type;
+// falls back to sniffing the file extension for older rows saved before that column existed.
+export function AttachmentPreview({ url, name, type }) {
   if (!url) return null
+  const kind = type || (/\.(png|jpe?g|gif|webp)$/i.test(url) ? 'image' : /\.(mp4|webm|mov)$/i.test(url) ? 'video' : 'pdf')
+
+  if (kind === 'image') {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', maxWidth: '100%' }}>
+        <img src={url} alt={name || 'Attached image'} style={{ display: 'block', maxWidth: '100%', maxHeight: 260, borderRadius: 12, border: `1px solid ${BD}` }} />
+      </a>
+    )
+  }
+  if (kind === 'video') {
+    return (
+      <video src={url} controls style={{ display: 'block', width: '100%', maxHeight: 260, borderRadius: 12, background: '#000' }} />
+    )
+  }
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
       style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: BG2, border: `1px solid ${BD}`, borderRadius: 10, padding: '7px 11px', fontSize: 11.5, fontWeight: 700, color: T1, textDecoration: 'none', maxWidth: '100%' }}>

@@ -16,7 +16,7 @@ function roomKind(roomKey) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
   const db = sql()
-  const { roomKey, title, body, subjectTag, questionId, pollOptions, asContributor, attachmentUrl, attachmentName } = req.body || {}
+  const { roomKey, title, body, subjectTag, questionId, pollOptions, asContributor, attachmentUrl, attachmentName, attachmentType } = req.body || {}
 
   if (!roomKey || !title || !title.trim()) return res.status(400).json({ error: 'Room and title are required' })
 
@@ -42,12 +42,10 @@ export default async function handler(req, res) {
   }
 
   const archiveAt = roomKey === 'webinar_threads' ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() : null
-  // Related-content PDFs (session notes/slides) only make sense on a webinar thread.
-  const isWebinar = roomKey === 'webinar_threads'
 
   const [thread] = await db`
-    INSERT INTO threads (room_key, title, body, subject_tag, question_id, archive_at, author_key, author_name, attachment_url, attachment_name)
-    VALUES (${roomKey}, ${title.trim()}, ${body || ''}, ${subjectTag || null}, ${questionId || null}, ${archiveAt}, ${authorKey}, ${authorName}, ${isWebinar ? attachmentUrl || null : null}, ${isWebinar ? attachmentName || null : null})
+    INSERT INTO threads (room_key, title, body, subject_tag, question_id, archive_at, author_key, author_name, attachment_url, attachment_name, attachment_type)
+    VALUES (${roomKey}, ${title.trim()}, ${body || ''}, ${subjectTag || null}, ${questionId || null}, ${archiveAt}, ${authorKey}, ${authorName}, ${attachmentUrl || null}, ${attachmentName || null}, ${attachmentUrl ? attachmentType || null : null})
     RETURNING *
   `
 

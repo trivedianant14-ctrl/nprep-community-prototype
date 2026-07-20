@@ -9,11 +9,12 @@ const PEER_NAMES = ['Priya S.', 'Rohit K.', 'Anjali M.', 'Kavya R.', 'Suresh M.'
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
   const { id } = req.query
-  const { body, asPeer, parentReplyId, attachmentUrl, attachmentName } = req.body || {}
+  const { body, asPeer, parentReplyId, attachmentUrl, attachmentName, attachmentType } = req.body || {}
   if (!body || !body.trim()) return res.status(400).json({ error: 'Reply body required' })
   const db = sql()
 
-  // Related-content PDFs are a Webinar Threads feature — ignore an attachment on any other room.
+  // Related-content attachments (PDF/image/video) are a Webinar Threads reply feature —
+  // ignore an attachment on any other room.
   const [thread] = await db`SELECT title, room_key FROM threads WHERE id = ${id}`
   const isWebinar = thread?.room_key === 'webinar_threads'
 
@@ -32,8 +33,8 @@ export default async function handler(req, res) {
   }
 
   const [reply] = await db`
-    INSERT INTO replies (thread_id, student_key, author_name, body, parent_reply_id, attachment_url, attachment_name)
-    VALUES (${id}, ${studentKey}, ${authorName}, ${body.trim()}, ${parentId}, ${isWebinar ? attachmentUrl || null : null}, ${isWebinar ? attachmentName || null : null})
+    INSERT INTO replies (thread_id, student_key, author_name, body, parent_reply_id, attachment_url, attachment_name, attachment_type)
+    VALUES (${id}, ${studentKey}, ${authorName}, ${body.trim()}, ${parentId}, ${isWebinar ? attachmentUrl || null : null}, ${isWebinar ? attachmentName || null : null}, ${isWebinar ? attachmentType || null : null})
     RETURNING *
   `
 
