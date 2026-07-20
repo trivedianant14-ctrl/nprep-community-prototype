@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, CommentIcon, LikeButton, ROOM_GRADIENT, timeAgo } from '../../shared'
+import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, CommentIcon, LikeButton, ROOM_GRADIENT, ShareIcon, shareThread, PdfChip, timeAgo } from '../../shared'
 import ChannelWheel from './ChannelWheel'
 
 const CONTRIBUTOR_POST_KINDS = ['subject_room', 'exam_room']
@@ -19,6 +19,15 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
   const [showCompose, setShowCompose] = useState(false)
   const [postTitle, setPostTitle] = useState('')
   const [postBody, setPostBody] = useState('')
+  const [sharedId, setSharedId] = useState(null) // thread id currently showing "Link copied"
+
+  const share = async (t) => {
+    const result = await shareThread(t)
+    if (result.copied) {
+      setSharedId(t.id)
+      setTimeout(() => setSharedId(id => (id === t.id ? null : id)), 1800)
+    }
+  }
 
   const roomKey = tile.kind === 'exam_room' ? (profile.exam ? 'exam_room_' + profile.exam.toLowerCase() : null) : tile.key
   const joined = roomKey ? enrolledRoomKeys.includes(roomKey) : false
@@ -94,12 +103,17 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
               </div>
               <div style={{ fontSize: 14, fontWeight: 700, color: INK, lineHeight: 1.4 }}>{t.title}</div>
               {t.body && <div style={{ fontSize: 11.5, color: T2, lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.body}</div>}
+              {t.attachmentUrl && <div onClick={e => e.stopPropagation()}><PdfChip url={t.attachmentUrl} name={t.attachmentName} /></div>}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 2 }}>
                 <LikeButton liked={t.likedByMe} count={t.likeCount} onToggle={e => { e.stopPropagation(); onLikeThread(t.id) }} size={13} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <CommentIcon />
                   <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{t.replyCount} comment{t.replyCount === 1 ? '' : 's'}</span>
                 </div>
+                <button onClick={e => { e.stopPropagation(); share(t) }} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', marginLeft: 'auto' }}>
+                  <ShareIcon size={13} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{sharedId === t.id ? 'Link copied' : 'Share'}</span>
+                </button>
               </div>
             </div>
           )

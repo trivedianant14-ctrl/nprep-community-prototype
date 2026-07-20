@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { StatusBar, T1, T2, T3, BG2, PL, PB, PD, G, INK, ROOM_GRADIENT, roomKindFromKey, LikeButton, CommentIcon, timeAgo } from '../../shared'
+import { StatusBar, T1, T2, T3, BG2, PL, PB, PD, G, INK, ROOM_GRADIENT, roomKindFromKey, LikeButton, CommentIcon, ShareIcon, shareThread, PdfChip, timeAgo } from '../../shared'
 
 function isEnrolled(tile, enrolledRoomKeys, exam) {
   if (tile.kind === 'exam_room') return exam ? enrolledRoomKeys.includes('exam_room_' + exam.toLowerCase()) : false
@@ -18,7 +18,16 @@ function tileForRoomKey(roomKey, roomTiles) {
 
 export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpenTile, onOpenThreadInRoom, onLikeThread, onOpenThreadFromNotification, onBack }) {
   const [showNotifs, setShowNotifs] = useState(false)
+  const [sharedId, setSharedId] = useState(null) // thread id currently showing "Link copied"
   const { roomTiles, profile, enrolledRoomKeys, exams, notifications, threads, rooms } = state
+
+  const share = async (t) => {
+    const result = await shareThread(t)
+    if (result.copied) {
+      setSharedId(t.id)
+      setTimeout(() => setSharedId(id => (id === t.id ? null : id)), 1800)
+    }
+  }
 
   const threadsFor = (tile) => {
     const keys = roomKeysFor(tile, profile.exam)
@@ -105,12 +114,17 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
                   </div>
                   <div style={{ fontSize: 13.5, fontWeight: 700, color: INK, lineHeight: 1.4 }}>{t.title}</div>
                   {t.body && <div style={{ fontSize: 11.5, color: T2, lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.body}</div>}
+                  {t.attachmentUrl && <div onClick={e => e.stopPropagation()}><PdfChip url={t.attachmentUrl} name={t.attachmentName} /></div>}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 2 }}>
                     <LikeButton liked={t.likedByMe} count={t.likeCount} onToggle={e => { e.stopPropagation(); onLikeThread(t.id) }} size={13} />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <CommentIcon />
                       <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{t.replyCount} comment{t.replyCount === 1 ? '' : 's'}</span>
                     </div>
+                    <button onClick={e => { e.stopPropagation(); share(t) }} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px' }}>
+                      <ShareIcon size={13} />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{sharedId === t.id ? 'Link copied' : 'Share'}</span>
+                    </button>
                     {!joined && (
                       <button onClick={e => { e.stopPropagation(); onSetRoomJoined(t.roomKey, true) }}
                         style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: PD, background: PL, border: `1px solid ${PB}`, borderRadius: 20, padding: '3px 10px', cursor: 'pointer' }}>

@@ -192,14 +192,16 @@ async function main() {
     VALUES ('exam_room_aiims', 'AIIMS cutoff trend — last 3 years', 'Posting the cutoff numbers we''ve tracked so far for AIIMS Nursing Officer.', ${at(-1 * DAY)})
   `
 
-  // Webinar Threads — one still active, one auto-archived (48h past its session).
+  // Webinar Threads — one still active, one auto-archived (48h past its session). Each
+  // carries a sample "related content" PDF so the attach-PDF feature has an example on
+  // first load, not just an empty affordance.
   await sql`
-    INSERT INTO threads (room_key, title, body, archive_at, created_at)
-    VALUES ('webinar_threads', 'Live now: MCQ Discussion — Community Health High-Yield', 'Drop your questions here during the session.', ${at(20 * HOUR)}, ${at(-4 * HOUR)})
+    INSERT INTO threads (room_key, title, body, archive_at, created_at, attachment_url, attachment_name)
+    VALUES ('webinar_threads', 'Live now: MCQ Discussion — Community Health High-Yield', 'Drop your questions here during the session.', ${at(20 * HOUR)}, ${at(-4 * HOUR)}, 'https://azsaiwirsh6zu76h.public.blob.vercel-storage.com/mcq-discussion-notes.pdf', 'mcq-discussion-notes.pdf')
   `
   await sql`
-    INSERT INTO threads (room_key, title, body, archive_at, created_at)
-    VALUES ('webinar_threads', 'Recap: Topper Journey session', 'Session wrapped — thanks for joining! This thread is now archived.', ${at(-1 * HOUR)}, ${at(-49 * HOUR)})
+    INSERT INTO threads (room_key, title, body, archive_at, created_at, attachment_url, attachment_name)
+    VALUES ('webinar_threads', 'Recap: Topper Journey session', 'Session wrapped — thanks for joining! This thread is now archived.', ${at(-1 * HOUR)}, ${at(-49 * HOUR)}, 'https://azsaiwirsh6zu76h.public.blob.vercel-storage.com/topper-journey-recap.pdf', 'topper-journey-recap.pdf')
   `
 
   console.log('Done.')
