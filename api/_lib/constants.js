@@ -2,6 +2,20 @@
 export const DEMO_STUDENT_KEY = 'demo'
 export const DEMO_STUDENT_NAME = 'You'
 
+// A like from this identity is an NPrep Team endorsement, not a peer like — stored in the
+// same thread_likes/reply_likes tables as any other liker, just a reserved student_key.
+export const NPREP_TEAM_KEY = 'nprep_team'
+export const NPREP_TEAM_NAME = 'NPrep Team'
+
+// Contributor tiers, based on how many of a student's distinct comments NPrep Team has
+// liked. 10+ is a visible badge; 15+ makes them eligible to request posting rights in
+// Subject Room / Exam Room (still gated behind admin approval in contributors.approved_to_post).
+export const ACTIVE_CONTRIBUTOR_THRESHOLD = 10
+export const ELIGIBLE_TO_POST_THRESHOLD = 15
+// Phase 1 — contributor-authored posts are limited to these two rooms (kind, not key, so
+// it covers every exam_room_* row without listing each exam).
+export const CONTRIBUTOR_POST_ROOM_KINDS = ['subject_room', 'exam_room']
+
 // PRD "Room Structure" — four room types shown to students. Exam Room is modeled as one
 // row per exam (student auto-enrolls into the one matching their profile) but the UI
 // groups all three under a single "Exam Room" tile, matching the PRD's four-room layout.

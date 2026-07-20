@@ -5,7 +5,7 @@ import RoomView from './community/RoomView'
 import ThreadDetail from './community/ThreadDetail'
 import { T1, T3, P, BD } from '../shared'
 
-export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoined, onPostReply, onVote, onLikeThread, onLikeReply, onExit }) {
+export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoined, onPostReply, onVote, onLikeThread, onLikeReply, onCreatePost, onExit }) {
   const [screen, setScreen] = useState('home') // home | community | room | thread
   const [activeTile, setActiveTile] = useState(null)
   const [activeThreadId, setActiveThreadId] = useState(null)
@@ -17,6 +17,9 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
   }, [screen, onOnboard])
 
   const openThread = (id) => { setActiveThreadId(id); setScreen('thread') }
+  // Opening a post from the mixed all-rooms feed also sets the matching room tile, so the
+  // thread's Back button lands on that post's own room instead of a stale previous one.
+  const openThreadInRoom = (id, tile) => { setActiveTile(tile); setActiveThreadId(id); setScreen('thread') }
 
   const goHome = () => setScreen('home')
   const goCommunity = () => setScreen('community')
@@ -36,6 +39,8 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             onSetExam={onSetExam}
             onSetRoomJoined={onSetRoomJoined}
             onOpenTile={(tile) => { setActiveTile(tile); setScreen('room') }}
+            onOpenThreadInRoom={openThreadInRoom}
+            onLikeThread={onLikeThread}
             onOpenThreadFromNotification={openThread}
             onBack={goHome}
           />
@@ -48,6 +53,8 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             onSetRoomJoined={onSetRoomJoined}
             onOpenThread={openThread}
             onSwitchRoom={switchRoom}
+            onLikeThread={onLikeThread}
+            onCreatePost={onCreatePost}
             onBack={() => setScreen('community')}
           />
         )}

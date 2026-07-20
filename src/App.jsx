@@ -50,11 +50,18 @@ export default function App() {
   const setRoomJoined = async (roomKey, join) => { await api('/enrollments', { method: 'POST', body: { roomKey, action: join ? 'join' : 'leave' } }); await refresh() }
   const createThread = async (payload) => { await api('/threads', { method: 'POST', body: payload }); await refresh() }
   const setThreadHidden = async (id, hidden) => { await api(`/threads/${id}`, { method: 'PATCH', body: { hidden } }); await refresh() }
-  const postReply = async (threadId, body, asPeer) => { await api(`/threads/${threadId}/replies`, { method: 'POST', body: { body, asPeer } }); await refresh() }
+  const postReply = async (threadId, body, asPeer, parentReplyId, attachment) => {
+    await api(`/threads/${threadId}/replies`, { method: 'POST', body: { body, asPeer, parentReplyId, attachmentUrl: attachment?.url, attachmentName: attachment?.name } })
+    await refresh()
+  }
   const setReplyHidden = async (id, hidden) => { await api(`/replies/${id}`, { method: 'PATCH', body: { hidden } }); await refresh() }
   const vote = async (threadId, optionId) => { await api(`/threads/${threadId}/vote`, { method: 'POST', body: { optionId } }); await refresh() }
-  const likeThread = async (threadId) => { await api(`/threads/${threadId}/like`, { method: 'POST' }); await refresh() }
-  const likeReply = async (replyId) => { await api(`/replies/${replyId}/like`, { method: 'POST' }); await refresh() }
+  const likeThread = async (threadId) => { await api(`/threads/${threadId}`, { method: 'POST' }); await refresh() }
+  const likeReply = async (replyId) => { await api(`/replies/${replyId}`, { method: 'POST', body: { action: 'like' } }); await refresh() }
+  const nprepLikeReply = async (replyId) => { await api(`/replies/${replyId}`, { method: 'POST', body: { action: 'nprep-like' } }); await refresh() }
+  const togglePinReply = async (replyId) => { await api(`/replies/${replyId}`, { method: 'POST', body: { action: 'pin' } }); await refresh() }
+  const approveContributor = async (studentKey) => { await api(`/contributors/${studentKey}/approve`, { method: 'POST' }); await refresh() }
+  const createPost = async (payload) => { await api('/threads', { method: 'POST', body: { ...payload, asContributor: true } }); await refresh() }
 
   const exitToLanding = () => setTopScreen('landing')
 
@@ -81,6 +88,7 @@ export default function App() {
             onVote={vote}
             onLikeThread={likeThread}
             onLikeReply={likeReply}
+            onCreatePost={createPost}
             onExit={exitToLanding}
           />
         </div>
@@ -93,6 +101,9 @@ export default function App() {
           onSetThreadHidden={setThreadHidden}
           onSetReplyHidden={setReplyHidden}
           onPostReply={postReply}
+          onNprepLikeReply={nprepLikeReply}
+          onTogglePinReply={togglePinReply}
+          onApproveContributor={approveContributor}
           onExit={exitToLanding}
         />
       )}

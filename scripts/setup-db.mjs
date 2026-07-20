@@ -35,6 +35,10 @@ CREATE TABLE IF NOT EXISTS threads (
   question_id INTEGER REFERENCES questions(id),
   hidden BOOLEAN NOT NULL DEFAULT false,
   archive_at TIMESTAMPTZ,
+  author_key TEXT,
+  author_name TEXT,
+  attachment_url TEXT,
+  attachment_name TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -65,6 +69,10 @@ CREATE TABLE IF NOT EXISTS replies (
   author_name TEXT NOT NULL,
   body TEXT NOT NULL,
   hidden BOOLEAN NOT NULL DEFAULT false,
+  parent_reply_id INTEGER REFERENCES replies(id) ON DELETE SET NULL,
+  pinned_at TIMESTAMPTZ,
+  attachment_url TEXT,
+  attachment_name TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -92,6 +100,12 @@ CREATE TABLE IF NOT EXISTS reply_likes (
   liked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (reply_id, student_key)
 );
+
+CREATE TABLE IF NOT EXISTS contributors (
+  student_key TEXT PRIMARY KEY,
+  approved_to_post BOOLEAN NOT NULL DEFAULT false,
+  approved_at TIMESTAMPTZ
+);
 `
 
 const now = Date.now()
@@ -114,7 +128,7 @@ async function main() {
   }
 
   console.log('Clearing existing demo data...')
-  await sql.query('TRUNCATE thread_likes, reply_likes, notifications, poll_votes, poll_options, polls, replies, threads, questions, enrollments, profiles RESTART IDENTITY CASCADE')
+  await sql.query('TRUNCATE thread_likes, reply_likes, contributors, notifications, poll_votes, poll_options, polls, replies, threads, questions, enrollments, profiles RESTART IDENTITY CASCADE')
 
   console.log('Seeding questions...')
   const qIds = []

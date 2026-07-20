@@ -7,14 +7,19 @@ import { ROOM_GRADIENT } from '../../shared'
 // as they approach the vertical extremes, exactly like a rolodex or a slot-machine reel
 // viewed edge-on. Swiping up/down along that curve (or a tap on a visible neighbor) rotates
 // it and switches rooms — no popup, no leaving the screen you're on.
-const ANGLE_STEP = 0.58 // radians between adjacent channel stops on the arc
+const ANGLE_STEP = 0.5  // radians between adjacent channel stops on the arc
 const PX_PER_STEP = 60  // vertical drag distance (px) that rotates the wheel by one stop
-const ICON = 42
+const ICON = 28
 const SNAP_MS = 240
 
 function norm(i, n) { return ((i % n) + n) % n }
 
-export default function ChannelWheel({ rooms, currentIndex, onSwitch }) {
+// Floats over the left edge of the screen below the header — deliberately subtle (small,
+// semi-transparent icons hugging the edge) so it reads as a swipeable accent rather than a
+// reserved column; the underlying content stays full-width, exactly like before the wheel
+// existed. Only the small circular icons themselves capture clicks/drags — everything else
+// in its bounding box is decorative, so content beneath is still reachable.
+export default function ChannelWheel({ rooms, currentIndex, onSwitch, topOffset = 0 }) {
   const containerRef = useRef(null)
   const [height, setHeight] = useState(560)
   const [wheelIndex, setWheelIndexState] = useState(currentIndex)
@@ -120,9 +125,11 @@ export default function ChannelWheel({ rooms, currentIndex, onSwitch }) {
   }
 
   const n = rooms.length
-  const R = Math.min(200, Math.max(120, height * 0.4))
+  // A wider curve (bigger radius) so the wheel still reads as a real arc even though the
+  // icons themselves are small and subtle — "wider" refers to the sweep, not the footprint.
+  const R = Math.min(260, Math.max(160, height * 0.5))
   const centerY = height / 2
-  const restX = 4
+  const restX = -4
 
   const nearest = norm(Math.round(wheelIndex), n)
 
@@ -133,7 +140,10 @@ export default function ChannelWheel({ rooms, currentIndex, onSwitch }) {
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
-      style={{ position: 'relative', width: 60, flexShrink: 0, height: '100%', touchAction: 'none', cursor: dragging ? 'grabbing' : 'grab', userSelect: 'none' }}
+      style={{
+        position: 'absolute', left: 0, top: topOffset, bottom: 0, width: 36, zIndex: 10,
+        touchAction: 'none', cursor: dragging ? 'grabbing' : 'grab', userSelect: 'none',
+      }}
     >
       {rooms.map((room, i) => {
         let diff = (i - wheelIndex) % n
@@ -143,8 +153,14 @@ export default function ChannelWheel({ rooms, currentIndex, onSwitch }) {
         const cos = Math.cos(theta), sin = Math.sin(theta)
         const x = restX + R * (cos - 1)
         const y = centerY + R * sin - ICON / 2
-        const opacity = Math.max(0.1, Math.min(1, 0.12 + 0.88 * cos))
-        const scale = Math.max(0.48, Math.min(1, 0.5 + 0.5 * cos))
+        // Clearly visible "beads on a wire" at rest — dimmer and smaller than while pressed,
+        // but never near-invisible; pressing brightens/enlarges and adds the highlight ring.
+        const opacity = dragging
+          ? Math.max(0.35, Math.min(1, 0.15 + 0.85 * cos))
+          : Math.max(0.32, Math.min(0.88, 0.25 + 0.63 * cos))
+        const scale = dragging
+          ? Math.max(0.55, Math.min(1.05, 0.5 + 0.55 * cos))
+          : Math.max(0.6, Math.min(0.92, 0.58 + 0.34 * cos))
         const isCurrent = i === nearest
         const grad = ROOM_GRADIENT[room.kind] || '#888'
 
@@ -157,18 +173,19 @@ export default function ChannelWheel({ rooms, currentIndex, onSwitch }) {
               position: 'absolute', left: 0, top: 0,
               transform: `translate(${x}px, ${y}px) scale(${scale})`,
               opacity, zIndex: isCurrent ? 5 : Math.round(4 - Math.abs(diff)),
-              width: ICON, height: ICON, borderRadius: '50%', border: isCurrent ? '2.5px solid white' : 'none',
+              width: ICON, height: ICON, borderRadius: '50%', border: isCurrent && dragging ? '2px solid white' : 'none',
               background: grad, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, cursor: 'pointer', padding: 0,
-              boxShadow: isCurrent ? '0 3px 12px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.06)' : '0 2px 6px rgba(0,0,0,0.15)',
+              fontSize: 13, cursor: 'pointer', padding: 0,
+              boxShadow: isCurrent && dragging ? '0 2px 8px rgba(0,0,0,0.22)' : '0 1px 3px rgba(0,0,0,0.12)',
+              transition: 'opacity 0.18s, transform 0.18s',
             }}
           >
             {room.emoji}
-            {isCurrent && (
+            {isCurrent && dragging && (
               <span style={{
-                position: 'absolute', left: ICON + 8, top: '50%', transform: 'translateY(-50%)',
-                whiteSpace: 'nowrap', fontSize: 10.5, fontWeight: 800, color: 'white', background: 'rgba(11,18,48,0.82)',
-                padding: '4px 10px', borderRadius: 20, pointerEvents: 'none',
+                position: 'absolute', left: ICON + 6, top: '50%', transform: 'translateY(-50%)',
+                whiteSpace: 'nowrap', fontSize: 9.5, fontWeight: 800, color: 'white', background: 'rgba(11,18,48,0.78)',
+                padding: '3px 8px', borderRadius: 20, pointerEvents: 'none',
               }}>
                 {room.label}
               </span>

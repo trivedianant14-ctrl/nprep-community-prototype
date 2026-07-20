@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { P, PL, PB, PD, T1, T2, T3, BD, BG2, G, GL, GB, R, RL, RB, timeAgo } from '../shared'
+import { P, PL, PB, PD, T1, T2, T3, BD, BG2, G, GL, GB, R, RL, RB, timeAgo, ContributorBadge, contributorTier, PdfChip, uploadPdf } from '../shared'
 
-export default function CommunityCMS({ state, onCreateThread, onSetThreadHidden, onSetReplyHidden, onPostReply, onExit }) {
-  const [tab, setTab] = useState('create') // create | moderate
+export default function CommunityCMS({ state, onCreateThread, onSetThreadHidden, onSetReplyHidden, onPostReply, onNprepLikeReply, onTogglePinReply, onApproveContributor, onExit }) {
+  const [tab, setTab] = useState('create') // create | moderate | contributors
   const { rooms, subjectTags, questions } = state
 
   return (
@@ -13,16 +13,16 @@ export default function CommunityCMS({ state, onCreateThread, onSetThreadHidden,
         </button>
         <span style={{ fontSize: 17, fontWeight: 800, color: T1 }}>Community CMS</span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-          {[['create', 'Create Thread'], ['moderate', 'Moderate']].map(([id, label]) => (
+          {[['create', 'Create Thread'], ['moderate', 'Moderate'], ['contributors', 'Contributors']].map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)} style={{ padding: '8px 16px', borderRadius: 20, border: `1px solid ${tab === id ? PB : BD}`, background: tab === id ? PL : 'white', color: tab === id ? PD : T2, fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>{label}</button>
           ))}
         </div>
       </div>
 
       <div style={{ padding: '24px 28px 60px', maxWidth: 720, margin: '0 auto' }}>
-        {tab === 'create'
-          ? <CreateThreadTab rooms={rooms} subjectTags={subjectTags} questions={questions} onCreateThread={onCreateThread} />
-          : <ModerateTab state={state} onSetThreadHidden={onSetThreadHidden} onSetReplyHidden={onSetReplyHidden} onPostReply={onPostReply} />}
+        {tab === 'create' && <CreateThreadTab rooms={rooms} subjectTags={subjectTags} questions={questions} onCreateThread={onCreateThread} />}
+        {tab === 'moderate' && <ModerateTab state={state} onSetThreadHidden={onSetThreadHidden} onSetReplyHidden={onSetReplyHidden} onPostReply={onPostReply} onNprepLikeReply={onNprepLikeReply} onTogglePinReply={onTogglePinReply} />}
+        {tab === 'contributors' && <ContributorsTab state={state} onApproveContributor={onApproveContributor} />}
       </div>
     </div>
   )
@@ -36,13 +36,32 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
   const [questionId, setQuestionId] = useState('')
   const [addPoll, setAddPoll] = useState(false)
   const [pollOptions, setPollOptions] = useState(['', ''])
+  const [attachment, setAttachment] = useState(null) // { url, name } | null
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
   const [done, setDone] = useState(false)
 
   const freeTierQuestions = questions.filter(q => q.freeTier)
   const isDailyDose = roomKey === 'daily_dose'
   const isSubjectRoom = roomKey === 'subject_room'
+  const isWebinar = roomKey === 'webinar_threads'
 
   const canSubmit = title.trim() && (!isDailyDose || questionId) && (!addPoll || pollOptions.filter(o => o.trim()).length >= 2)
+
+  const pickPdf = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploadError('')
+    setUploading(true)
+    try {
+      setAttachment(await uploadPdf(file))
+    } catch (err) {
+      setUploadError(err.message || 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const submit = async () => {
     await onCreateThread({
@@ -52,8 +71,10 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
       subjectTag: isSubjectRoom ? subjectTag : null,
       questionId: isDailyDose ? Number(questionId) : null,
       pollOptions: addPoll ? pollOptions.filter(o => o.trim()) : null,
+      attachmentUrl: isWebinar ? attachment?.url : null,
+      attachmentName: isWebinar ? attachment?.name : null,
     })
-    setTitle(''); setBody(''); setQuestionId(''); setAddPoll(false); setPollOptions(['', ''])
+    setTitle(''); setBody(''); setQuestionId(''); setAddPoll(false); setPollOptions(['', '']); setAttachment(null)
     setDone(true)
     setTimeout(() => setDone(false), 2500)
   }
@@ -106,6 +127,24 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
         </div>
       )}
 
+      {isWebinar && (
+        <>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: T2, margin: '18px 0 6px' }}>RELATED CONTENT (optional PDF — session notes, slides…)</div>
+          {attachment ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <PdfChip url={attachment.url} name={attachment.name} />
+              <button onClick={() => setAttachment(null)} style={{ ...smBtn }}>Remove</button>
+            </div>
+          ) : (
+            <label style={{ ...smBtn, display: 'inline-flex', alignItems: 'center', cursor: uploading ? 'default' : 'pointer' }}>
+              <input type="file" accept="application/pdf" onChange={pickPdf} disabled={uploading} style={{ display: 'none' }} />
+              {uploading ? 'Uploading…' : '📎 Attach PDF'}
+            </label>
+          )}
+          {uploadError && <div style={{ fontSize: 11, color: '#791F1F', marginTop: 6 }}>{uploadError}</div>}
+        </>
+      )}
+
       <button onClick={submit} disabled={!canSubmit} style={{ marginTop: 22, background: canSubmit ? P : BD, color: 'white', border: 'none', borderRadius: 24, padding: '12px 28px', fontSize: 13.5, fontWeight: 700, cursor: canSubmit ? 'pointer' : 'default' }}>
         Post Thread
       </button>
@@ -114,9 +153,9 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
   )
 }
 
-function ModerateTab({ state, onSetThreadHidden, onSetReplyHidden, onPostReply }) {
+function ModerateTab({ state, onSetThreadHidden, onSetReplyHidden, onPostReply, onNprepLikeReply, onTogglePinReply }) {
   const [expanded, setExpanded] = useState(null)
-  const { threads, repliesByThread, rooms } = state
+  const { threads, repliesByThread, rooms, contributors = {} } = state
   const roomLabel = (key) => rooms.find(r => r.key === key)?.label || key
   const sorted = [...threads].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
@@ -144,9 +183,26 @@ function ModerateTab({ state, onSetThreadHidden, onSetReplyHidden, onPostReply }
                 {replies.map(r => (
                   <div key={r.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: `1px solid ${BD}` }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: T1 }}>{r.hidden ? '(hidden)' : r.authorName} <span style={{ fontWeight: 400, color: T3, fontSize: 9.5 }}>{timeAgo(r.createdAt)}</span></div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: T1 }}>{r.hidden ? '(hidden)' : r.authorName}</span>
+                        <ContributorBadge tier={contributorTier(contributors[r.studentKey])} />
+                        {r.pinned && <span style={{ fontSize: 9.5, fontWeight: 700, color: '#B96A00' }}>📌 pinned</span>}
+                        <span style={{ fontWeight: 400, color: T3, fontSize: 9.5 }}>{timeAgo(r.createdAt)}</span>
+                      </div>
                       <div style={{ fontSize: 11.5, color: r.hidden ? T3 : T1, fontStyle: r.hidden ? 'italic' : 'normal', marginTop: 2 }}>{r.hidden ? 'This reply was removed' : r.body}</div>
                     </div>
+                    {!r.hidden && (
+                      <>
+                        <button onClick={() => onNprepLikeReply(r.id)} style={{ ...smBtn, flexShrink: 0, borderColor: r.likedByNPrepTeam ? PB : BD, color: r.likedByNPrepTeam ? PD : T2, background: r.likedByNPrepTeam ? PL : 'white' }}>
+                          {r.likedByNPrepTeam ? '❤️ NPrep liked' : '🤍 NPrep like'}
+                        </button>
+                        {!r.parentReplyId && (
+                          <button onClick={() => onTogglePinReply(r.id)} style={{ ...smBtn, flexShrink: 0, borderColor: r.pinned ? '#FAC775' : BD, color: r.pinned ? '#B96A00' : T2, background: r.pinned ? '#FAEEDA' : 'white' }}>
+                            {r.pinned ? 'Unpin' : 'Pin'}
+                          </button>
+                        )}
+                      </>
+                    )}
                     <button onClick={() => onSetReplyHidden(r.id, !r.hidden)} style={{ ...smBtn, flexShrink: 0, borderColor: r.hidden ? GB : RB, color: r.hidden ? '#3B6D11' : '#791F1F', background: r.hidden ? GL : RL }}>
                       {r.hidden ? 'Restore' : 'Delete'}
                     </button>
@@ -157,6 +213,49 @@ function ModerateTab({ state, onSetThreadHidden, onSetReplyHidden, onPostReply }
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// Students eligible (15+ NPrep-liked comments) or already approved to post in Subject Room /
+// Exam Room — the admin-approval step that actually turns on their posting rights (Phase 1).
+function ContributorsTab({ state, onApproveContributor }) {
+  const { contributors = {}, repliesByThread } = state
+  const nameByKey = {}
+  for (const list of Object.values(repliesByThread)) {
+    for (const r of list) if (!nameByKey[r.studentKey]) nameByKey[r.studentKey] = r.authorName
+  }
+
+  const rows = Object.entries(contributors)
+    .map(([studentKey, c]) => ({ studentKey, name: nameByKey[studentKey] || studentKey, ...c }))
+    .filter(row => row.nprepLikedCount > 0 || row.approvedToPost)
+    .sort((a, b) => b.nprepLikedCount - a.nprepLikedCount)
+
+  return (
+    <div>
+      <div style={{ fontSize: 11.5, color: T2, marginBottom: 16, lineHeight: 1.5 }}>
+        A student becomes an Active Contributor at 10 NPrep-liked comments, and Eligible to post at 15 — like a comment from the Moderate tab to count it. Eligibility alone doesn't grant posting; approve them below to actually turn it on for Subject Room / Exam Room.
+      </div>
+      {rows.length === 0 && <div style={{ fontSize: 11.5, color: T3 }}>No contributors yet — NPrep-like some comments in Moderate to get started.</div>}
+      {rows.map(row => (
+        <div key={row.studentKey} style={{ display: 'flex', alignItems: 'center', gap: 12, border: `1px solid ${BD}`, borderRadius: 12, padding: '12px 16px', marginBottom: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T1 }}>{row.name}</span>
+              <ContributorBadge tier={contributorTier(row)} />
+            </div>
+            <div style={{ fontSize: 10.5, color: T3, marginTop: 2 }}>{row.nprepLikedCount} comment{row.nprepLikedCount === 1 ? '' : 's'} liked by NPrep Team</div>
+          </div>
+          {row.isEligible ? (
+            <button onClick={() => onApproveContributor(row.studentKey)}
+              style={{ ...smBtn, borderColor: row.approvedToPost ? GB : PB, color: row.approvedToPost ? '#3B6D11' : PD, background: row.approvedToPost ? GL : PL }}>
+              {row.approvedToPost ? 'Approved ✓ — revoke' : 'Approve to post'}
+            </button>
+          ) : (
+            <span style={{ fontSize: 10, color: T3 }}>{15 - row.nprepLikedCount} more to become eligible</span>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

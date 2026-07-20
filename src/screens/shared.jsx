@@ -158,6 +158,82 @@ export async function shareThread(thread) {
   try { await navigator.clipboard.writeText(url); return { copied: true } } catch { return { copied: false } }
 }
 
+export function PaperclipIcon({ size = 15, color = T2 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21.44 11.05l-9.19 9.19a5.5 5.5 0 01-7.78-7.78l9.19-9.19a3.67 3.67 0 015.19 5.19l-9.2 9.19a1.83 1.83 0 01-2.59-2.59l8.49-8.48"/>
+    </svg>
+  )
+}
+
+const MAX_PDF_BYTES = 20 * 1024 * 1024
+
+// Uploads a PDF straight from the browser to Vercel Blob via a short-lived client token
+// (api/blob/upload.js issues it) — bypasses the function body-size limit a proxied upload
+// would hit. Used by the Webinar Threads attach button, both CMS-side and student replies.
+export async function uploadPdf(file) {
+  if (file.type !== 'application/pdf') throw new Error('Only PDF files can be attached')
+  if (file.size > MAX_PDF_BYTES) throw new Error('PDF must be under 20MB')
+  const { upload } = await import('@vercel/blob/client')
+  const blob = await upload(file.name, file, { access: 'public', handleUploadUrl: '/api/blob/upload' })
+  return { url: blob.url, name: file.name }
+}
+
+// Small tappable chip for a PDF attachment — shown on a thread or a reply. Opens the file
+// in a new tab (Vercel Blob URLs serve inline with the right content-type).
+export function PdfChip({ url, name }) {
+  if (!url) return null
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer"
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: BG2, border: `1px solid ${BD}`, borderRadius: 10, padding: '7px 11px', fontSize: 11.5, fontWeight: 700, color: T1, textDecoration: 'none', maxWidth: '100%' }}>
+      <span style={{ fontSize: 14 }}>📄</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name || 'Attachment.pdf'}</span>
+    </a>
+  )
+}
+
+// NPrep's real app icon (fetched from the App Store listing) — shown wherever an
+// official/endorsement mark is needed. On a comment NPrep Team has liked, this renders
+// on its own next to the like control, no text label.
+export function NPrepMark({ size = 16 }) {
+  return (
+    <img src="/nprep-logo.jpg" alt="Liked by NPrep Team" title="Liked by NPrep Team"
+      style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0, boxShadow: '0 0 0 1px rgba(0,0,0,0.06)' }} />
+  )
+}
+
+// Contributor tier badge next to an author's name — highest tier only. "Eligible" read as
+// weaker than "Active" even though 15+ outranks 10+, and gave no signal once someone was
+// actually approved to post — so there are three distinct, ranked names now:
+// Active (10+) < Top (15+, pending approval) < Verified (15+, approved to post).
+export function ContributorBadge({ tier }) {
+  if (tier === 'verified') {
+    return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9.5, fontWeight: 800, color: '#1D4ED8', background: '#DBEAFE', borderRadius: 20, padding: '2px 9px' }}>✅ Verified Contributor</span>
+  }
+  if (tier === 'top') {
+    return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9.5, fontWeight: 800, color: '#92400E', background: '#FDE68A', borderRadius: 20, padding: '2px 9px' }}>🎖️ Top Contributor</span>
+  }
+  if (tier === 'active') {
+    return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9.5, fontWeight: 800, color: '#0F766E', background: '#99F6E4', borderRadius: 20, padding: '2px 9px' }}>🛡️ Active Contributor</span>
+  }
+  return null
+}
+
+export function contributorTier(contributor) {
+  if (!contributor) return null
+  if (contributor.approvedToPost) return 'verified'
+  if (contributor.isEligible) return 'top'
+  if (contributor.isActiveContributor) return 'active'
+  return null
+}
+
+// Reddit-style "OP" (original poster) tag — this commenter authored the thread itself.
+export function OPBadge() {
+  return (
+    <span style={{ fontSize: 9.5, fontWeight: 800, color: '#6D28D9', background: '#EDE4FF', borderRadius: 20, padding: '2px 8px' }}>OP</span>
+  )
+}
+
 export function Chip({ children, tone = 'default', ...props }) {
   const tones = {
     default: { bg: BG2, fg: T2, border: BD },

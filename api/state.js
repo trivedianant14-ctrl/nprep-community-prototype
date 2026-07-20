@@ -1,12 +1,12 @@
 import { sql } from './_lib/db.js'
 import { serializeThread, serializeReply } from './_lib/serialize.js'
-import { ROOMS, ROOM_TILES, EXAMS, SUBJECT_TAGS, DEMO_STUDENT_KEY } from './_lib/constants.js'
+import { ROOMS, ROOM_TILES, EXAMS, SUBJECT_TAGS, DEMO_STUDENT_KEY, NPREP_TEAM_KEY, ACTIVE_CONTRIBUTOR_THRESHOLD, ELIGIBLE_TO_POST_THRESHOLD } from './_lib/constants.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
   const db = sql()
 
-  const [profileRows, enrollmentRows, threads, replies, polls, pollOptions, pollVotes, notifications, questions, threadLikes, replyLikes] = await Promise.all([
+  const [profileRows, enrollmentRows, threads, replies, polls, pollOptions, pollVotes, notifications, questions, threadLikes, replyLikes, contributorRows] = await Promise.all([
     db`SELECT exam, onboarded FROM profiles WHERE student_key = ${DEMO_STUDENT_KEY}`,
     db`SELECT room_key FROM enrollments WHERE student_key = ${DEMO_STUDENT_KEY}`,
     db`SELECT * FROM threads ORDER BY created_at DESC`,
@@ -18,6 +18,7 @@ export default async function handler(req, res) {
     db`SELECT * FROM questions ORDER BY id`,
     db`SELECT thread_id, student_key FROM thread_likes`,
     db`SELECT reply_id, student_key FROM reply_likes`,
+    db`SELECT student_key, approved_to_post FROM contributors`,
   ])
 
   const threadLikeCounts = {}
@@ -28,13 +29,40 @@ export default async function handler(req, res) {
   }
   const replyLikeCounts = {}
   const myReplyLikes = new Set()
+  const nprepLikedReplyIds = new Set()
   for (const l of replyLikes) {
     replyLikeCounts[l.reply_id] = (replyLikeCounts[l.reply_id] || 0) + 1
     if (l.student_key === DEMO_STUDENT_KEY) myReplyLikes.add(l.reply_id)
+    if (l.student_key === NPREP_TEAM_KEY) nprepLikedReplyIds.add(l.reply_id)
   }
 
   const repliesByThread = {}
-  for (const r of replies) (repliesByThread[r.thread_id] ??= []).push(r)
+  const repliesById = {}
+  for (const r of replies) {
+    (repliesByThread[r.thread_id] ??= []).push(r)
+    repliesById[r.id] = r
+  }
+
+  // Contributor tiers — how many of a student's own (non-hidden) comments NPrep Team has
+  // liked, badge tiers at 10/15, and whether an admin has actually turned posting on.
+  const approvedByKey = {}
+  for (const c of contributorRows) approvedByKey[c.student_key] = c.approved_to_post
+  const authorNprepCounts = {}
+  for (const r of replies) {
+    if (r.hidden) continue
+    if (nprepLikedReplyIds.has(r.id)) authorNprepCounts[r.student_key] = (authorNprepCounts[r.student_key] || 0) + 1
+  }
+  const contributorKeys = new Set([...Object.keys(authorNprepCounts), ...Object.keys(approvedByKey)])
+  const contributorsOut = {}
+  for (const key of contributorKeys) {
+    const nprepLikedCount = authorNprepCounts[key] || 0
+    contributorsOut[key] = {
+      nprepLikedCount,
+      isActiveContributor: nprepLikedCount >= ACTIVE_CONTRIBUTOR_THRESHOLD,
+      isEligible: nprepLikedCount >= ELIGIBLE_TO_POST_THRESHOLD,
+      approvedToPost: !!approvedByKey[key],
+    }
+  }
 
   const pollByThread = {}
   for (const p of polls) pollByThread[p.thread_id] = p
@@ -62,7 +90,11 @@ export default async function handler(req, res) {
 
   const repliesOut = {}
   for (const [threadId, list] of Object.entries(repliesByThread)) {
-    repliesOut[threadId] = list.map(r => serializeReply(r, replyLikeCounts[r.id] || 0, myReplyLikes.has(r.id)))
+    repliesOut[threadId] = list.map(r => {
+      const parent = r.parent_reply_id ? repliesById[r.parent_reply_id] : null
+      const replyingToName = parent && !parent.hidden ? parent.author_name : null
+      return serializeReply(r, replyLikeCounts[r.id] || 0, myReplyLikes.has(r.id), replyingToName, nprepLikedReplyIds.has(r.id))
+    })
   }
 
   res.status(200).json({
@@ -79,5 +111,6 @@ export default async function handler(req, res) {
       title: n.title, body: n.body, createdAt: n.created_at,
     })),
     questions: questions.map(q => ({ id: q.id, question: q.question, options: q.options, correctIndex: q.correct_index, freeTier: q.free_tier })),
+    contributors: contributorsOut,
   })
 }

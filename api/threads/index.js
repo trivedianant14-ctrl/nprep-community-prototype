@@ -1,16 +1,38 @@
 import { sql } from '../_lib/db.js'
-import { DEMO_STUDENT_KEY } from '../_lib/constants.js'
+import { DEMO_STUDENT_KEY, DEMO_STUDENT_NAME, CONTRIBUTOR_POST_ROOM_KINDS } from '../_lib/constants.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
+function roomKind(roomKey) {
+  if (roomKey && roomKey.startsWith('exam_room')) return 'exam_room'
+  return roomKey
+}
+
 // PRD P0 #2 (admin thread creation) + P0 #8 (content rule enforcement) + P0 #6 (push
 // notifications fired on new-thread creation, gated by enrollment / once-per-day).
+// Also reachable from the student app for approved contributors (asContributor: true) —
+// gated server-side to Subject Room / Exam Room and an actual contributors.approved_to_post
+// row, not just trusted from the client.
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
   const db = sql()
-  const { roomKey, title, body, subjectTag, questionId, pollOptions } = req.body || {}
+  const { roomKey, title, body, subjectTag, questionId, pollOptions, asContributor, attachmentUrl, attachmentName } = req.body || {}
 
   if (!roomKey || !title || !title.trim()) return res.status(400).json({ error: 'Room and title are required' })
+
+  let authorKey = null
+  let authorName = null
+  if (asContributor) {
+    if (!CONTRIBUTOR_POST_ROOM_KINDS.includes(roomKind(roomKey))) {
+      return res.status(403).json({ error: 'Contributors can only post in Subject Room or Exam Room' })
+    }
+    const [contributor] = await db`SELECT approved_to_post FROM contributors WHERE student_key = ${DEMO_STUDENT_KEY}`
+    if (!contributor?.approved_to_post) {
+      return res.status(403).json({ error: 'Not approved to post yet' })
+    }
+    authorKey = DEMO_STUDENT_KEY
+    authorName = DEMO_STUDENT_NAME
+  }
 
   // P0 #8 — no manual workaround to attach a paid question to Daily Dose. Server-side
   // enforced: even if a client sent a paid questionId, it's rejected here.
@@ -20,10 +42,12 @@ export default async function handler(req, res) {
   }
 
   const archiveAt = roomKey === 'webinar_threads' ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() : null
+  // Related-content PDFs (session notes/slides) only make sense on a webinar thread.
+  const isWebinar = roomKey === 'webinar_threads'
 
   const [thread] = await db`
-    INSERT INTO threads (room_key, title, body, subject_tag, question_id, archive_at)
-    VALUES (${roomKey}, ${title.trim()}, ${body || ''}, ${subjectTag || null}, ${questionId || null}, ${archiveAt})
+    INSERT INTO threads (room_key, title, body, subject_tag, question_id, archive_at, author_key, author_name, attachment_url, attachment_name)
+    VALUES (${roomKey}, ${title.trim()}, ${body || ''}, ${subjectTag || null}, ${questionId || null}, ${archiveAt}, ${authorKey}, ${authorName}, ${isWebinar ? attachmentUrl || null : null}, ${isWebinar ? attachmentName || null : null})
     RETURNING *
   `
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { StatusBar, T1, T2, T3, BG2, PL, PB, PD, G, INK, ROOM_GRADIENT, timeAgo } from '../../shared'
+import { StatusBar, T1, T2, T3, BG2, PL, PB, PD, G, INK, ROOM_GRADIENT, roomKindFromKey, LikeButton, CommentIcon, timeAgo } from '../../shared'
 
 function isEnrolled(tile, enrolledRoomKeys, exam) {
   if (tile.kind === 'exam_room') return exam ? enrolledRoomKeys.includes('exam_room_' + exam.toLowerCase()) : false
@@ -11,14 +11,27 @@ function roomKeysFor(tile, exam) {
   return [tile.key]
 }
 
-export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpenTile, onOpenThreadFromNotification, onBack }) {
+function tileForRoomKey(roomKey, roomTiles) {
+  const kind = roomKindFromKey(roomKey)
+  return roomTiles.find(t => t.kind === kind) || roomTiles[0]
+}
+
+export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpenTile, onOpenThreadInRoom, onLikeThread, onOpenThreadFromNotification, onBack }) {
   const [showNotifs, setShowNotifs] = useState(false)
-  const { roomTiles, profile, enrolledRoomKeys, exams, notifications, threads } = state
+  const { roomTiles, profile, enrolledRoomKeys, exams, notifications, threads, rooms } = state
 
   const threadsFor = (tile) => {
     const keys = roomKeysFor(tile, profile.exam)
     return threads.filter(t => keys.includes(t.roomKey) && !t.hidden).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   }
+
+  // Reddit-home-style mixed feed — recent posts from every room interleaved, so a student
+  // can see (and like, and join on the spot) what's happening across the whole community
+  // without visiting each room one at a time.
+  const feedPosts = threads
+    .filter(t => !t.hidden && !t.archived)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 8)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'white' }}>
@@ -36,13 +49,80 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
 
       <div className="scroll" style={{ flex: 1, overflowY: 'auto' }}>
         {/* WhatsApp-Communities-style banner: the community itself, with rooms as its groups below */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: `8px solid ${BG2}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', flexShrink: 0 }}>
           <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #1D5BF0, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>💬</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14.5, fontWeight: 800, color: INK }}>NPrep Community</div>
             <div style={{ fontSize: 11, color: T2, marginTop: 2 }}>{roomTiles.length} rooms · 5,000+ active students</div>
           </div>
         </div>
+
+        {/* Channels — 1x4 grid right under the logo, so every room is a single tap away
+            without scrolling past the feed to find the room list. */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, padding: '0 12px 16px', borderBottom: `8px solid ${BG2}` }}>
+          {roomTiles.map(tile => {
+            const joined = isEnrolled(tile, enrolledRoomKeys, profile.exam)
+            const roomKeys = roomKeysFor(tile, profile.exam)
+            const list = threadsFor(tile)
+            const engagement = list.reduce((sum, t) => sum + t.replyCount, 0)
+
+            return (
+              <button key={tile.key} onClick={() => onOpenTile(tile)}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: '6px 2px' }}>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ width: 50, height: 50, borderRadius: '50%', background: ROOM_GRADIENT[tile.kind] || BG2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}>{tile.emoji}</div>
+                  {!joined && roomKeys.length > 0 ? (
+                    <span style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: '50%', background: PD, color: 'white', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>+</span>
+                  ) : engagement > 0 ? (
+                    <span style={{ position: 'absolute', bottom: -2, right: -2, minWidth: 16, height: 16, borderRadius: 9, background: G, color: 'white', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', border: '2px solid white' }}>{engagement}</span>
+                  ) : null}
+                </div>
+                <span style={{ fontSize: 10, fontWeight: 700, color: INK, textAlign: 'center', lineHeight: 1.25 }}>{tile.label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {feedPosts.length > 0 && (
+          <div style={{ borderBottom: `8px solid ${BG2}` }}>
+            <div style={{ padding: '14px 16px 8px', fontSize: 12, fontWeight: 800, color: T2, letterSpacing: '0.02em' }}>🔥 RECENT ACROSS ALL ROOMS</div>
+            {feedPosts.map(t => {
+              const kind = roomKindFromKey(t.roomKey)
+              const tile = tileForRoomKey(t.roomKey, roomTiles)
+              const room = rooms.find(r => r.key === t.roomKey)
+              const joined = enrolledRoomKeys.includes(t.roomKey)
+              const grad = ROOM_GRADIENT[kind]
+              return (
+                <div key={t.id} role="button" tabIndex={0}
+                  onClick={() => onOpenThreadInRoom(t.id, tile)}
+                  onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onOpenThreadInRoom(t.id, tile)}
+                  style={{ padding: '13px 16px', borderTop: `1px solid ${BG2}`, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 9.5, fontWeight: 800, color: 'white', background: grad, borderRadius: 20, padding: '3px 9px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {tile.emoji} {room ? room.label : tile.label}
+                    </span>
+                    <span style={{ fontSize: 10, color: T3, marginLeft: 'auto' }}>{timeAgo(t.createdAt)}</span>
+                  </div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: INK, lineHeight: 1.4 }}>{t.title}</div>
+                  {t.body && <div style={{ fontSize: 11.5, color: T2, lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.body}</div>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 2 }}>
+                    <LikeButton liked={t.likedByMe} count={t.likeCount} onToggle={e => { e.stopPropagation(); onLikeThread(t.id) }} size={13} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <CommentIcon />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{t.replyCount} comment{t.replyCount === 1 ? '' : 's'}</span>
+                    </div>
+                    {!joined && (
+                      <button onClick={e => { e.stopPropagation(); onSetRoomJoined(t.roomKey, true) }}
+                        style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: PD, background: PL, border: `1px solid ${PB}`, borderRadius: 20, padding: '3px 10px', cursor: 'pointer' }}>
+                        Join
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {!profile.exam && (
           <div style={{ background: PL, border: `1px solid ${PB}`, borderRadius: 14, padding: '14px 16px', margin: '14px 16px' }}>
@@ -56,46 +136,6 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
           </div>
         )}
 
-        <div>
-          {roomTiles.map(tile => {
-            const joined = isEnrolled(tile, enrolledRoomKeys, profile.exam)
-            const roomKeys = roomKeysFor(tile, profile.exam)
-            const list = threadsFor(tile)
-            const last = list[0]
-            const engagement = list.reduce((sum, t) => sum + t.replyCount, 0)
-            const canJoin = roomKeys.length > 0
-
-            return (
-              <div key={tile.key} onClick={() => onOpenTile(tile)}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: `1px solid ${BG2}`, cursor: 'pointer' }}>
-                <div style={{ width: 50, height: 50, borderRadius: '50%', background: ROOM_GRADIENT[tile.kind] || BG2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}>{tile.emoji}</div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 13.5, fontWeight: 800, color: INK }}>{tile.label}</span>
-                  </div>
-                  <div style={{ fontSize: 11.5, color: T2, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {last ? last.title : tile.purpose}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-                  <span style={{ fontSize: 10, color: T3 }}>{last ? timeAgo(last.createdAt) : tile.cadence}</span>
-                  {!joined && canJoin ? (
-                    <button onClick={e => { e.stopPropagation(); onSetRoomJoined(roomKeys[0], true) }}
-                      style={{ fontSize: 10, fontWeight: 700, color: PD, background: PL, border: `1px solid ${PB}`, borderRadius: 20, padding: '3px 10px', cursor: 'pointer' }}>
-                      Join
-                    </button>
-                  ) : engagement > 0 ? (
-                    <span style={{ minWidth: 18, height: 18, borderRadius: 10, background: G, color: 'white', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{engagement}</span>
-                  ) : (
-                    <span style={{ width: 18, height: 18 }} />
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
       </div>
 
       {showNotifs && (
