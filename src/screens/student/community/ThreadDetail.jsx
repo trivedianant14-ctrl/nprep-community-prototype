@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, GradientAvatar, HeartIcon, bubbleThemeFor, roomKindFromKey, ROOM_GRADIENT, CommentIcon, LikeButton, ShareIcon, shareThread, timeAgo, ContributorBadge, contributorTier, NPrepMark, OPBadge, PaperclipIcon, AttachmentPreview, uploadAttachment, ATTACHMENT_ACCEPT } from '../../shared'
+import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, GradientAvatar, HeartIcon, bubbleThemeFor, roomKindFromKey, ROOM_GRADIENT, CommentIcon, LikeButton, ShareIcon, shareThread, timeAgo, ContributorBadge, contributorTier, NPrepMark, OPBadge, PaperclipIcon, AttachmentPreview, uploadAttachment, ATTACHMENT_ACCEPT, ResourceLink, LiveBadge } from '../../shared'
 import ChannelWheel from './ChannelWheel'
 
-export default function ThreadDetail({ state, threadId, onPostReply, onVote, onLikeThread, onLikeReply, onSwitchRoom, onBack }) {
+export default function ThreadDetail({ state, threadId, onPostReply, onVote, onLikeThread, onLikeReply, onSwitchRoom, onRegisterForWebinar, onBack }) {
   const [draft, setDraft] = useState('')
   const [shareMsg, setShareMsg] = useState('')
   const [attachment, setAttachment] = useState(null) // { url, name, type } | null — pending media for the next reply
@@ -123,6 +123,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 10, position: 'relative' }}>
             {thread.subjectTag && <span style={{ fontSize: 9.5, fontWeight: 800, color: 'white', background: 'rgba(255,255,255,0.24)', borderRadius: 20, padding: '3px 10px' }}>{thread.subjectTag}</span>}
             {thread.poll && <span style={{ fontSize: 9.5, fontWeight: 800, color: 'white', background: 'rgba(255,255,255,0.24)', borderRadius: 20, padding: '3px 10px' }}>📊 POLL</span>}
+            {thread.isLive && <LiveBadge />}
           </div>
           <div style={{ fontSize: 18, fontWeight: 800, color: 'white', lineHeight: 1.32, position: 'relative' }}>{thread.title}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, position: 'relative' }}>
@@ -132,9 +133,10 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
           </div>
         </div>
 
-        <div style={{ padding: '16px 18px 4px' }}>
-          {thread.body && <div style={{ fontSize: 13, color: T1, lineHeight: 1.6, marginBottom: thread.attachmentUrl ? 10 : 0 }}>{thread.body}</div>}
+        <div style={{ padding: '16px 18px 4px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {thread.body && <div style={{ fontSize: 13, color: T1, lineHeight: 1.6 }}>{thread.body}</div>}
           <AttachmentPreview url={thread.attachmentUrl} name={thread.attachmentName} type={thread.attachmentType} />
+          <ResourceLink url={thread.resourceUrl} name={thread.resourceName} />
         </div>
 
         {/* Action row — Instagram/Facebook-style: like, comment count, share, all on the post itself */}
@@ -144,10 +146,16 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
             <CommentIcon size={14} />
             <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{replies.length}</span>
           </div>
-          <button onClick={share} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', marginLeft: 'auto' }}>
+          <button onClick={share} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', marginLeft: isWebinar && thread.startsAt && !thread.archived ? 0 : 'auto' }}>
             <ShareIcon />
             <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{shareMsg || 'Share'}</span>
           </button>
+          {isWebinar && thread.startsAt && !thread.archived && (
+            <button onClick={() => onRegisterForWebinar(thread.id)}
+              style={{ marginLeft: 'auto', fontSize: 10.5, fontWeight: 700, color: thread.registeredByMe ? T2 : PD, background: thread.registeredByMe ? BG2 : PL, border: `1px solid ${thread.registeredByMe ? BD : PB}`, borderRadius: 20, padding: '6px 12px', cursor: 'pointer' }}>
+              {thread.registeredByMe ? 'Registered ✓' : 'Register'}
+            </button>
+          )}
         </div>
 
         {poll && (

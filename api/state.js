@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
   const db = sql()
 
-  const [profileRows, enrollmentRows, threads, replies, polls, pollOptions, pollVotes, notifications, questions, threadLikes, replyLikes, contributorRows] = await Promise.all([
+  const [profileRows, enrollmentRows, threads, replies, polls, pollOptions, pollVotes, notifications, questions, threadLikes, replyLikes, contributorRows, registrations] = await Promise.all([
     db`SELECT exam, onboarded FROM profiles WHERE student_key = ${DEMO_STUDENT_KEY}`,
     db`SELECT room_key FROM enrollments WHERE student_key = ${DEMO_STUDENT_KEY}`,
     db`SELECT * FROM threads ORDER BY created_at DESC`,
@@ -19,6 +19,7 @@ export default async function handler(req, res) {
     db`SELECT thread_id, student_key FROM thread_likes`,
     db`SELECT reply_id, student_key FROM reply_likes`,
     db`SELECT student_key, approved_to_post FROM contributors`,
+    db`SELECT thread_id, student_key FROM webinar_registrations`,
   ])
 
   const threadLikeCounts = {}
@@ -64,6 +65,13 @@ export default async function handler(req, res) {
     }
   }
 
+  const registrationCounts = {}
+  const myRegistrations = new Set()
+  for (const r of registrations) {
+    registrationCounts[r.thread_id] = (registrationCounts[r.thread_id] || 0) + 1
+    if (r.student_key === DEMO_STUDENT_KEY) myRegistrations.add(r.thread_id)
+  }
+
   const pollByThread = {}
   for (const p of polls) pollByThread[p.thread_id] = p
   const optionsByPoll = {}
@@ -85,7 +93,7 @@ export default async function handler(req, res) {
         options: opts.map(o => ({ id: o.id, label: o.label, voteCount: votes.filter(v => v.option_id === o.id).length })),
       }
     }
-    return serializeThread(t, (repliesByThread[t.id] || []).length, pollOut, threadLikeCounts[t.id] || 0, myThreadLikes.has(t.id))
+    return serializeThread(t, (repliesByThread[t.id] || []).length, pollOut, threadLikeCounts[t.id] || 0, myThreadLikes.has(t.id), registrationCounts[t.id] || 0, myRegistrations.has(t.id))
   })
 
   const repliesOut = {}

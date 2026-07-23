@@ -25,7 +25,10 @@ export const ROOMS = [
   { key: 'daily_dose', label: 'Daily Dose', emoji: '🔥', purpose: 'Daily hook — QOTD extension from homepage', cadence: 'Daily', kind: 'daily_dose' },
   { key: 'subject_room', label: 'Subject Room', emoji: '📖', purpose: 'Academic discussion, concept clarity, exam tips', cadence: '3x per week', kind: 'subject_room' },
   ...EXAMS.map(exam => ({ key: `exam_room_${exam.toLowerCase()}`, label: `Exam Room · ${exam}`, emoji: '🎯', purpose: `${exam} — notifications, cutoffs, strategy`, cadence: '2x per week', kind: 'exam_room', exam })),
-  { key: 'webinar_threads', label: 'Webinar Threads', emoji: '🎥', purpose: 'Pre and post-session discussion', cadence: 'Per webinar', kind: 'webinar_threads' },
+  { key: 'webinar_threads', label: 'Webinars', emoji: '🎥', purpose: 'Live sessions — register, join, and discuss', cadence: 'Per webinar', kind: 'webinar_threads' },
+  { key: 'yt_lectures', label: 'YT Lectures', emoji: '📺', purpose: 'Recorded lectures — watch, search, download notes', cadence: 'Weekly', kind: 'yt_lectures' },
+  { key: 'recent_updates', label: 'Recent Updates', emoji: '📰', purpose: 'Announcements — photos and videos as they happen', cadence: 'As it happens', kind: 'recent_updates' },
+  { key: 'nursing_jobs', label: 'Nursing Jobs', emoji: '💼', purpose: 'New openings for nursing officers and staff nurses', cadence: 'As posted', kind: 'nursing_jobs' },
 ]
 
 export const SUBJECT_TAGS = ['Medical Surgical Nursing', 'Community Health Nursing', 'Child Health Nursing', 'Mental Health Nursing', 'OBG Nursing']
@@ -37,8 +40,11 @@ export function roomByKey(key) {
 // A room "tile" as shown on the Community landing screen groups the 3 exam_room rows
 // into one card (student only ever sees their own matched exam's content inside it).
 export const ROOM_TILES = [
-  ROOMS[0],
-  ROOMS[1],
+  roomByKey('daily_dose'),
+  roomByKey('subject_room'),
   { key: 'exam_room', label: 'Exam Room', emoji: '🎯', purpose: 'NORCET, AIIMS, DSSSB — notifications, cutoffs, strategy', cadence: '2x per week', kind: 'exam_room' },
-  ROOMS[ROOMS.length - 1],
+  roomByKey('webinar_threads'),
+  roomByKey('yt_lectures'),
+  roomByKey('recent_updates'),
+  roomByKey('nursing_jobs'),
 ]

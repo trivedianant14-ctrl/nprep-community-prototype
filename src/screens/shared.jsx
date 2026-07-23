@@ -76,11 +76,13 @@ export const ROOM_GRADIENT = {
   subject_room: 'linear-gradient(135deg,#1D5BF0,#7C3AED)',
   exam_room: 'linear-gradient(135deg,#F5576C,#F093FB)',
   webinar_threads: 'linear-gradient(135deg,#00B8A9,#1D5BF0)',
+  yt_lectures: 'linear-gradient(135deg,#E11D48,#F59E0B)',
+  recent_updates: 'linear-gradient(135deg,#7C3AED,#1D5BF0)',
+  nursing_jobs: 'linear-gradient(135deg,#0F766E,#3B6D11)',
 }
+const SIMPLE_ROOM_KINDS = ['daily_dose', 'subject_room', 'webinar_threads', 'yt_lectures', 'recent_updates', 'nursing_jobs']
 export function roomKindFromKey(roomKey) {
-  if (roomKey === 'daily_dose') return 'daily_dose'
-  if (roomKey === 'subject_room') return 'subject_room'
-  if (roomKey === 'webinar_threads') return 'webinar_threads'
+  if (SIMPLE_ROOM_KINDS.includes(roomKey)) return roomKey
   if (roomKey && roomKey.startsWith('exam_room')) return 'exam_room'
   return 'subject_room'
 }
@@ -213,6 +215,30 @@ export function AttachmentPreview({ url, name, type }) {
       style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: BG2, border: `1px solid ${BD}`, borderRadius: 10, padding: '7px 11px', fontSize: 11.5, fontWeight: 700, color: T1, textDecoration: 'none', maxWidth: '100%' }}>
       <span style={{ fontSize: 14 }}>📄</span>
       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name || 'Attachment.pdf'}</span>
+    </a>
+  )
+}
+
+// Small pulsing "LIVE" pill — a webinar thread whose starts_at has passed but hasn't
+// archived yet. Distinct from the "🔥 Hot" flair (recency) — this means happening right now.
+export function LiveBadge() {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9.5, fontWeight: 800, color: 'white', background: '#E11D48', borderRadius: 20, padding: '3px 9px' }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'white' }} />
+      LIVE
+    </span>
+  )
+}
+
+// Secondary downloadable file — e.g. lecture notes, session slides — kept separate from
+// the primary media attachment (which is previewed inline via AttachmentPreview).
+export function ResourceLink({ url, name }) {
+  if (!url) return null
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" download
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'white', border: `1px solid ${BD}`, borderRadius: 10, padding: '7px 11px', fontSize: 11.5, fontWeight: 700, color: P, textDecoration: 'none', maxWidth: '100%' }}>
+      <span style={{ fontSize: 13 }}>⬇️</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name || 'Download'}</span>
     </a>
   )
 }

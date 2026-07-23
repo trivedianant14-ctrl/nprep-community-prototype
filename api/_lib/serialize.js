@@ -1,4 +1,7 @@
-export function serializeThread(t, replyCount, poll, likeCount = 0, likedByMe = false) {
+export function serializeThread(t, replyCount, poll, likeCount = 0, likedByMe = false, registeredCount = 0, registeredByMe = false) {
+  const now = new Date()
+  const startsAt = t.starts_at ? new Date(t.starts_at) : null
+  const archiveAt = t.archive_at ? new Date(t.archive_at) : null
   return {
     id: t.id,
     roomKey: t.room_key,
@@ -8,7 +11,7 @@ export function serializeThread(t, replyCount, poll, likeCount = 0, likedByMe = 
     hidden: t.hidden,
     createdAt: t.created_at,
     archiveAt: t.archive_at,
-    archived: t.archive_at ? new Date(t.archive_at) < new Date() : false,
+    archived: archiveAt ? archiveAt < now : false,
     replyCount,
     poll,
     questionId: t.question_id,
@@ -19,6 +22,15 @@ export function serializeThread(t, replyCount, poll, likeCount = 0, likedByMe = 
     attachmentUrl: t.attachment_url,
     attachmentName: t.attachment_name,
     attachmentType: t.attachment_type,
+    resourceUrl: t.resource_url,
+    resourceName: t.resource_name,
+    // Webinar scheduling — a thread with a future starts_at is "upcoming" (shows Register),
+    // once startsAt has passed and it isn't archived yet it's "live" (shows the LIVE badge).
+    startsAt: t.starts_at,
+    isUpcoming: !!startsAt && startsAt > now,
+    isLive: !!startsAt && startsAt <= now && (!archiveAt || archiveAt > now),
+    registeredCount,
+    registeredByMe,
   }
 }
 

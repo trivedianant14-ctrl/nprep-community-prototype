@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { P, PL, PB, PD, T1, T2, T3, BD, BG2, G, GL, GB, R, RL, RB, timeAgo, ContributorBadge, contributorTier, AttachmentPreview, uploadAttachment, ATTACHMENT_ACCEPT } from '../shared'
+import { P, PL, PB, PD, T1, T2, T3, BD, BG2, G, GL, GB, R, RL, RB, timeAgo, ContributorBadge, contributorTier, AttachmentPreview, ResourceLink, uploadAttachment, ATTACHMENT_ACCEPT } from '../shared'
 
 export default function CommunityCMS({ state, onCreateThread, onSetThreadHidden, onSetReplyHidden, onPostReply, onNprepLikeReply, onTogglePinReply, onApproveContributor, onExit }) {
   const [tab, setTab] = useState('create') // create | moderate | contributors
@@ -42,11 +42,17 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
   const [attachment, setAttachment] = useState(null) // { url, name, type } | null
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const [resource, setResource] = useState(null) // { url, name, type } | null — secondary downloadable file
+  const [resourceUploading, setResourceUploading] = useState(false)
+  const [resourceError, setResourceError] = useState('')
+  const [startsAt, setStartsAt] = useState('') // datetime-local string — Webinars only
   const [done, setDone] = useState(false)
 
   const freeTierQuestions = questions.filter(q => q.freeTier)
   const isDailyDose = roomKey === 'daily_dose'
   const isSubjectRoom = roomKey === 'subject_room'
+  const isYtLectures = roomKey === 'yt_lectures'
+  const isWebinar = roomKey === 'webinar_threads'
   const isCurrentAffairs = isDailyDose && dailyPostType === 'currentAffairs'
 
   const canSubmit = title.trim() && (!isDailyDose || isCurrentAffairs || questionId) && (!addPoll || pollOptions.filter(o => o.trim()).length >= 2)
@@ -66,19 +72,37 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
     }
   }
 
+  const pickResource = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setResourceError('')
+    setResourceUploading(true)
+    try {
+      setResource(await uploadAttachment(file))
+    } catch (err) {
+      setResourceError(err.message || 'Upload failed')
+    } finally {
+      setResourceUploading(false)
+    }
+  }
+
   const submit = async () => {
     await onCreateThread({
       roomKey,
       title: title.trim(),
       body: body.trim(),
-      subjectTag: isSubjectRoom ? subjectTag : isCurrentAffairs ? DAILY_DOSE_TAG : null,
+      subjectTag: (isSubjectRoom || isYtLectures) ? subjectTag : isCurrentAffairs ? DAILY_DOSE_TAG : null,
       questionId: isDailyDose && !isCurrentAffairs ? Number(questionId) : null,
       pollOptions: addPoll ? pollOptions.filter(o => o.trim()) : null,
       attachmentUrl: attachment?.url || null,
       attachmentName: attachment?.name || null,
       attachmentType: attachment?.type || null,
+      resourceUrl: resource?.url || null,
+      resourceName: resource?.name || null,
+      startsAt: isWebinar && startsAt ? new Date(startsAt).toISOString() : null,
     })
-    setTitle(''); setBody(''); setQuestionId(''); setAddPoll(false); setPollOptions(['', '']); setAttachment(null)
+    setTitle(''); setBody(''); setQuestionId(''); setAddPoll(false); setPollOptions(['', '']); setAttachment(null); setResource(null); setStartsAt('')
     setDone(true)
     setTimeout(() => setDone(false), 2500)
   }
@@ -114,12 +138,19 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
         </>
       )}
 
-      {isSubjectRoom && (
+      {(isSubjectRoom || isYtLectures) && (
         <>
           <div style={{ fontSize: 12.5, fontWeight: 800, color: T2, margin: '18px 0 6px' }}>SUBJECT TAG</div>
           <select value={subjectTag} onChange={e => setSubjectTag(e.target.value)} style={sel}>
             {subjectTags.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
+        </>
+      )}
+
+      {isWebinar && (
+        <>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: T2, margin: '18px 0 6px' }}>STARTS AT (optional — schedule a session; a LIVE badge appears automatically once it starts)</div>
+          <input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} style={inp} />
         </>
       )}
 
@@ -158,6 +189,20 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread }) {
         </label>
       )}
       {uploadError && <div style={{ fontSize: 11, color: '#791F1F', marginTop: 6 }}>{uploadError}</div>}
+
+      <div style={{ fontSize: 12.5, fontWeight: 800, color: T2, margin: '18px 0 6px' }}>ADDITIONAL DOWNLOAD (optional — e.g. lecture notes or slides PDF, separate from the media above)</div>
+      {resource ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <ResourceLink url={resource.url} name={resource.name} />
+          <button onClick={() => setResource(null)} style={smBtn}>Remove</button>
+        </div>
+      ) : (
+        <label style={{ ...smBtn, display: 'inline-flex', alignItems: 'center', cursor: resourceUploading ? 'default' : 'pointer' }}>
+          <input type="file" accept={ATTACHMENT_ACCEPT} onChange={pickResource} disabled={resourceUploading} style={{ display: 'none' }} />
+          {resourceUploading ? 'Uploading…' : '⬇️ Attach download'}
+        </label>
+      )}
+      {resourceError && <div style={{ fontSize: 11, color: '#791F1F', marginTop: 6 }}>{resourceError}</div>}
 
       <button onClick={submit} disabled={!canSubmit} style={{ marginTop: 22, background: canSubmit ? P : BD, color: 'white', border: 'none', borderRadius: 24, padding: '12px 28px', fontSize: 13.5, fontWeight: 700, cursor: canSubmit ? 'pointer' : 'default' }}>
         Post Thread

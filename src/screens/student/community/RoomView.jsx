@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, CommentIcon, LikeButton, ROOM_GRADIENT, ShareIcon, shareThread, AttachmentPreview, timeAgo } from '../../shared'
+import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, CommentIcon, LikeButton, ROOM_GRADIENT, ShareIcon, shareThread, AttachmentPreview, ResourceLink, LiveBadge, timeAgo } from '../../shared'
 import ChannelWheel from './ChannelWheel'
 
 const CONTRIBUTOR_POST_KINDS = ['subject_room', 'exam_room']
@@ -14,12 +14,14 @@ function Flair({ children, tone }) {
   return <span style={{ fontSize: 9.5, fontWeight: 800, color: 'white', background: grad, borderRadius: 20, padding: '3px 9px' }}>{children}</span>
 }
 
-export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOpenThread, onSwitchRoom, onLikeThread, onCreatePost, onBack }) {
-  const { profile, enrolledRoomKeys, exams, threads, roomTiles } = state
+export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOpenThread, onSwitchRoom, onLikeThread, onCreatePost, onRegisterForWebinar, onBack }) {
+  const { profile, enrolledRoomKeys, exams, threads, roomTiles, subjectTags } = state
   const [showCompose, setShowCompose] = useState(false)
   const [postTitle, setPostTitle] = useState('')
   const [postBody, setPostBody] = useState('')
   const [sharedId, setSharedId] = useState(null) // thread id currently showing "Link copied"
+  const [search, setSearch] = useState('')
+  const [subjectFilter, setSubjectFilter] = useState('all')
 
   const share = async (t) => {
     const result = await shareThread(t)
@@ -31,7 +33,12 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
 
   const roomKey = tile.kind === 'exam_room' ? (profile.exam ? 'exam_room_' + profile.exam.toLowerCase() : null) : tile.key
   const joined = roomKey ? enrolledRoomKeys.includes(roomKey) : false
-  const list = roomKey ? threads.filter(t => t.roomKey === roomKey && !t.hidden).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : []
+  const isYtLectures = tile.kind === 'yt_lectures'
+  let list = roomKey ? threads.filter(t => t.roomKey === roomKey && !t.hidden).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : []
+  if (isYtLectures) {
+    if (search.trim()) list = list.filter(t => t.title.toLowerCase().includes(search.trim().toLowerCase()))
+    if (subjectFilter !== 'all') list = list.filter(t => t.subjectTag === subjectFilter)
+  }
   const grad = ROOM_GRADIENT[tile.kind]
   const currentIndex = Math.max(0, roomTiles.findIndex(t => t.key === tile.key))
   const HEADER_H = 54
@@ -68,6 +75,21 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
           </div>
         </div>
 
+        {isYtLectures && (
+          <div style={{ padding: '14px 16px 4px' }}>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search lectures by name…"
+              style={{ width: '100%', border: `1.5px solid ${BD}`, borderRadius: 22, padding: '9px 14px', fontSize: 12.5, outline: 'none', marginBottom: 10 }} />
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {['all', ...subjectTags].map(s => (
+                <button key={s} onClick={() => setSubjectFilter(s)}
+                  style={{ fontSize: 10.5, fontWeight: 700, padding: '5px 12px', borderRadius: 20, cursor: 'pointer', border: `1px solid ${subjectFilter === s ? PB : BD}`, background: subjectFilter === s ? PL : 'white', color: subjectFilter === s ? PD : T2 }}>
+                  {s === 'all' ? 'All subjects' : s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {tile.kind === 'exam_room' && !profile.exam && (
           <div style={{ background: PL, border: `1px solid ${PB}`, borderRadius: 14, padding: '14px 16px', margin: '14px 16px' }}>
             <div style={{ fontSize: 12.5, fontWeight: 800, color: PD, marginBottom: 10 }}>Pick your exam to see this room's threads</div>
@@ -86,7 +108,9 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
         )}
 
         {roomKey && list.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 10px', fontSize: 12, color: T3 }}>No threads yet in this room.</div>
+          <div style={{ textAlign: 'center', padding: '40px 10px', fontSize: 12, color: T3 }}>
+            {isYtLectures && (search.trim() || subjectFilter !== 'all') ? 'No lectures match your search/filter.' : 'No threads yet in this room.'}
+          </div>
         )}
 
         {list.map(t => {
@@ -98,22 +122,30 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 {t.subjectTag && <Flair tone="subject">{t.subjectTag}</Flair>}
                 {t.poll && <Flair tone="poll">📊 POLL</Flair>}
-                {hot && !t.archived && <span style={{ fontSize: 10, fontWeight: 700, color: '#B9490A' }}>🔥 Hot</span>}
+                {t.isLive && <LiveBadge />}
+                {hot && !t.archived && !t.isLive && <span style={{ fontSize: 10, fontWeight: 700, color: '#B9490A' }}>🔥 Hot</span>}
                 <span style={{ fontSize: 10, color: T3, marginLeft: 'auto' }}>{timeAgo(t.createdAt)}</span>
               </div>
               <div style={{ fontSize: 14, fontWeight: 700, color: INK, lineHeight: 1.4 }}>{t.title}</div>
               {t.body && <div style={{ fontSize: 11.5, color: T2, lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.body}</div>}
               {t.attachmentUrl && <div onClick={e => e.stopPropagation()}><AttachmentPreview url={t.attachmentUrl} name={t.attachmentName} type={t.attachmentType} /></div>}
+              {t.resourceUrl && <div onClick={e => e.stopPropagation()}><ResourceLink url={t.resourceUrl} name={t.resourceName} /></div>}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 2 }}>
                 <LikeButton liked={t.likedByMe} count={t.likeCount} onToggle={e => { e.stopPropagation(); onLikeThread(t.id) }} size={13} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <CommentIcon />
                   <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{t.replyCount} comment{t.replyCount === 1 ? '' : 's'}</span>
                 </div>
-                <button onClick={e => { e.stopPropagation(); share(t) }} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', marginLeft: 'auto' }}>
+                <button onClick={e => { e.stopPropagation(); share(t) }} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', marginLeft: t.roomKey === 'webinar_threads' && t.startsAt ? 0 : 'auto' }}>
                   <ShareIcon size={13} />
                   <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{sharedId === t.id ? 'Link copied' : 'Share'}</span>
                 </button>
+                {t.roomKey === 'webinar_threads' && t.startsAt && !t.archived && (
+                  <button onClick={e => { e.stopPropagation(); onRegisterForWebinar(t.id) }}
+                    style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: t.registeredByMe ? T2 : PD, background: t.registeredByMe ? BG2 : PL, border: `1px solid ${t.registeredByMe ? BD : PB}`, borderRadius: 20, padding: '3px 10px', cursor: 'pointer' }}>
+                    {t.registeredByMe ? 'Registered ✓' : 'Register'}
+                  </button>
+                )}
               </div>
             </div>
           )

@@ -16,7 +16,7 @@ function roomKind(roomKey) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
   const db = sql()
-  const { roomKey, title, body, subjectTag, questionId, pollOptions, asContributor, attachmentUrl, attachmentName, attachmentType } = req.body || {}
+  const { roomKey, title, body, subjectTag, questionId, pollOptions, asContributor, attachmentUrl, attachmentName, attachmentType, startsAt, resourceUrl, resourceName } = req.body || {}
 
   if (!roomKey || !title || !title.trim()) return res.status(400).json({ error: 'Room and title are required' })
 
@@ -41,11 +41,15 @@ export default async function handler(req, res) {
     if (!q || !q.free_tier) return res.status(400).json({ error: 'Daily Dose can only use free-tier questions' })
   }
 
-  const archiveAt = roomKey === 'webinar_threads' ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() : null
+  // A scheduled webinar archives 48h after its own session start, not 48h after creation —
+  // otherwise a session scheduled a week out would already show as archived on arrival.
+  const isWebinar = roomKey === 'webinar_threads'
+  const sessionStart = isWebinar && startsAt ? new Date(startsAt).getTime() : Date.now()
+  const archiveAt = isWebinar ? new Date(sessionStart + 48 * 60 * 60 * 1000).toISOString() : null
 
   const [thread] = await db`
-    INSERT INTO threads (room_key, title, body, subject_tag, question_id, archive_at, author_key, author_name, attachment_url, attachment_name, attachment_type)
-    VALUES (${roomKey}, ${title.trim()}, ${body || ''}, ${subjectTag || null}, ${questionId || null}, ${archiveAt}, ${authorKey}, ${authorName}, ${attachmentUrl || null}, ${attachmentName || null}, ${attachmentUrl ? attachmentType || null : null})
+    INSERT INTO threads (room_key, title, body, subject_tag, question_id, archive_at, author_key, author_name, attachment_url, attachment_name, attachment_type, starts_at, resource_url, resource_name)
+    VALUES (${roomKey}, ${title.trim()}, ${body || ''}, ${subjectTag || null}, ${questionId || null}, ${archiveAt}, ${authorKey}, ${authorName}, ${attachmentUrl || null}, ${attachmentName || null}, ${attachmentUrl ? attachmentType || null : null}, ${isWebinar && startsAt ? startsAt : null}, ${resourceUrl || null}, ${resourceUrl ? resourceName || null : null})
     RETURNING *
   `
 

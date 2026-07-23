@@ -6,7 +6,7 @@ const FLOWS = [
     id: 'student',
     tag: 'Student journey',
     title: 'Student App',
-    desc: 'Homepage with the Community teaser, four rooms (Daily Dose, Subject Room, Exam Room, Webinar Threads), thread replies, polls, exam-onboarding, and push notifications.',
+    desc: 'Homepage with the Community teaser, seven rooms (Daily Dose, Subject Room, Exam Room, Webinars, YT Lectures, Recent Updates, Nursing Jobs), thread replies, polls, exam-onboarding, and push notifications.',
   },
   {
     id: 'cms',

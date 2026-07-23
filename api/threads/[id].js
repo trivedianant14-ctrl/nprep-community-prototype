@@ -2,8 +2,8 @@ import { sql } from '../_lib/db.js'
 import { DEMO_STUDENT_KEY } from '../_lib/constants.js'
 
 // Moderator hide/unhide a whole thread from student view without deleting it (PRD P0 #7).
-// Also handles the demo student's like toggle (POST) — folded in here, rather than its own
-// file, to stay under the Hobby-plan serverless function count.
+// Also handles the demo student's like toggle and webinar register toggle (POST) — folded
+// in here, rather than their own files, to stay under the Hobby-plan serverless function count.
 export default async function handler(req, res) {
   const { id } = req.query
   const db = sql()
@@ -15,6 +15,20 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
+    const { action } = req.body || {}
+
+    if (action === 'register') {
+      // RSVP for a specific webinar session (distinct from joining the Webinars room —
+      // joining gets you every new-thread notification, registering is a per-session commitment).
+      const [existing] = await db`SELECT 1 FROM webinar_registrations WHERE thread_id = ${id} AND student_key = ${DEMO_STUDENT_KEY}`
+      if (existing) {
+        await db`DELETE FROM webinar_registrations WHERE thread_id = ${id} AND student_key = ${DEMO_STUDENT_KEY}`
+      } else {
+        await db`INSERT INTO webinar_registrations (thread_id, student_key) VALUES (${id}, ${DEMO_STUDENT_KEY}) ON CONFLICT DO NOTHING`
+      }
+      return res.status(200).json({ registered: !existing })
+    }
+
     // Instagram-style single heart, not a Reddit up/down vote. Liking a post you haven't
     // joined auto-joins its room (engagement -> instant membership) — unliking never un-joins.
     const [existing] = await db`SELECT 1 FROM thread_likes WHERE thread_id = ${id} AND student_key = ${DEMO_STUDENT_KEY}`

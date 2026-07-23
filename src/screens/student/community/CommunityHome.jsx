@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { StatusBar, T1, T2, T3, BG2, PL, PB, PD, G, INK, ROOM_GRADIENT, roomKindFromKey, LikeButton, CommentIcon, ShareIcon, shareThread, AttachmentPreview, timeAgo } from '../../shared'
+import { StatusBar, T1, T2, T3, BD, BG2, PL, PB, PD, G, INK, ROOM_GRADIENT, roomKindFromKey, LikeButton, CommentIcon, ShareIcon, shareThread, AttachmentPreview, ResourceLink, LiveBadge, timeAgo } from '../../shared'
 
 function isEnrolled(tile, enrolledRoomKeys, exam) {
   if (tile.kind === 'exam_room') return exam ? enrolledRoomKeys.includes('exam_room_' + exam.toLowerCase()) : false
@@ -16,7 +16,7 @@ function tileForRoomKey(roomKey, roomTiles) {
   return roomTiles.find(t => t.kind === kind) || roomTiles[0]
 }
 
-export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpenTile, onOpenThreadInRoom, onLikeThread, onOpenThreadFromNotification, onBack }) {
+export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpenTile, onOpenThreadInRoom, onLikeThread, onRegisterForWebinar, onOpenThreadFromNotification, onBack }) {
   const [showNotifs, setShowNotifs] = useState(false)
   const [sharedId, setSharedId] = useState(null) // thread id currently showing "Link copied"
   const { roomTiles, profile, enrolledRoomKeys, exams, notifications, threads, rooms } = state
@@ -110,12 +110,14 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
                     <span style={{ fontSize: 9.5, fontWeight: 800, color: 'white', background: grad, borderRadius: 20, padding: '3px 9px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       {tile.emoji} {room ? room.label : tile.label}
                     </span>
+                    {t.isLive && <LiveBadge />}
                     <span style={{ fontSize: 10, color: T3, marginLeft: 'auto' }}>{timeAgo(t.createdAt)}</span>
                   </div>
                   <div style={{ fontSize: 13.5, fontWeight: 700, color: INK, lineHeight: 1.4 }}>{t.title}</div>
                   {t.body && <div style={{ fontSize: 11.5, color: T2, lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.body}</div>}
                   {t.attachmentUrl && <div onClick={e => e.stopPropagation()}><AttachmentPreview url={t.attachmentUrl} name={t.attachmentName} type={t.attachmentType} /></div>}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 2 }}>
+                  {t.resourceUrl && <div onClick={e => e.stopPropagation()}><ResourceLink url={t.resourceUrl} name={t.resourceName} /></div>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 2, flexWrap: 'wrap' }}>
                     <LikeButton liked={t.likedByMe} count={t.likeCount} onToggle={e => { e.stopPropagation(); onLikeThread(t.id) }} size={13} />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <CommentIcon />
@@ -125,7 +127,13 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
                       <ShareIcon size={13} />
                       <span style={{ fontSize: 11, fontWeight: 700, color: T2 }}>{sharedId === t.id ? 'Link copied' : 'Share'}</span>
                     </button>
-                    {!joined && (
+                    {t.roomKey === 'webinar_threads' && t.startsAt && !t.archived && (
+                      <button onClick={e => { e.stopPropagation(); onRegisterForWebinar(t.id) }}
+                        style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: t.registeredByMe ? T2 : PD, background: t.registeredByMe ? BG2 : PL, border: `1px solid ${t.registeredByMe ? BD : PB}`, borderRadius: 20, padding: '3px 10px', cursor: 'pointer' }}>
+                        {t.registeredByMe ? 'Registered ✓' : 'Register'}
+                      </button>
+                    )}
+                    {!joined && !(t.roomKey === 'webinar_threads' && t.startsAt && !t.archived) && (
                       <button onClick={e => { e.stopPropagation(); onSetRoomJoined(t.roomKey, true) }}
                         style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: PD, background: PL, border: `1px solid ${PB}`, borderRadius: 20, padding: '3px 10px', cursor: 'pointer' }}>
                         Join

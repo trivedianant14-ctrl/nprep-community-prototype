@@ -57,6 +57,7 @@ export default function App() {
   const setReplyHidden = async (id, hidden) => { await api(`/replies/${id}`, { method: 'PATCH', body: { hidden } }); await refresh() }
   const vote = async (threadId, optionId) => { await api(`/threads/${threadId}/vote`, { method: 'POST', body: { optionId } }); await refresh() }
   const likeThread = async (threadId) => { await api(`/threads/${threadId}`, { method: 'POST' }); await refresh() }
+  const registerForWebinar = async (threadId) => { await api(`/threads/${threadId}`, { method: 'POST', body: { action: 'register' } }); await refresh() }
   const likeReply = async (replyId) => { await api(`/replies/${replyId}`, { method: 'POST', body: { action: 'like' } }); await refresh() }
   const nprepLikeReply = async (replyId) => { await api(`/replies/${replyId}`, { method: 'POST', body: { action: 'nprep-like' } }); await refresh() }
   const togglePinReply = async (replyId) => { await api(`/replies/${replyId}`, { method: 'POST', body: { action: 'pin' } }); await refresh() }
@@ -89,6 +90,7 @@ export default function App() {
             onLikeThread={likeThread}
             onLikeReply={likeReply}
             onCreatePost={createPost}
+            onRegisterForWebinar={registerForWebinar}
             onExit={exitToLanding}
           />
         </div>

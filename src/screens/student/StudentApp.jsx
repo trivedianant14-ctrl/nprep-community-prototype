@@ -5,7 +5,7 @@ import RoomView from './community/RoomView'
 import ThreadDetail from './community/ThreadDetail'
 import { T1, T3, P, BD } from '../shared'
 
-export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoined, onPostReply, onVote, onLikeThread, onLikeReply, onCreatePost, onExit }) {
+export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoined, onPostReply, onVote, onLikeThread, onLikeReply, onCreatePost, onRegisterForWebinar, onExit }) {
   const [screen, setScreen] = useState('home') // home | community | room | thread
   const [activeTile, setActiveTile] = useState(null)
   const [activeThreadId, setActiveThreadId] = useState(null)
@@ -41,6 +41,7 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             onOpenTile={(tile) => { setActiveTile(tile); setScreen('room') }}
             onOpenThreadInRoom={openThreadInRoom}
             onLikeThread={onLikeThread}
+            onRegisterForWebinar={onRegisterForWebinar}
             onOpenThreadFromNotification={openThread}
             onBack={goHome}
           />
@@ -55,6 +56,7 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             onSwitchRoom={switchRoom}
             onLikeThread={onLikeThread}
             onCreatePost={onCreatePost}
+            onRegisterForWebinar={onRegisterForWebinar}
             onBack={() => setScreen('community')}
           />
         )}
@@ -67,6 +69,7 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             onLikeThread={onLikeThread}
             onLikeReply={onLikeReply}
             onSwitchRoom={switchRoom}
+            onRegisterForWebinar={onRegisterForWebinar}
             onBack={() => setScreen(activeTile ? 'room' : 'community')}
           />
         )}
