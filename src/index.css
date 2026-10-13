@@ -24,8 +24,9 @@
 
 html, body, #root {
   height: 100%;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: #eeeef5;
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -49,7 +50,7 @@ input, textarea { font-family: inherit; }
 
 @media (min-width: 500px) {
   #root { overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; padding: 24px 0 72px; }
-  .phone { min-height: 844px; max-height: 844px; border-radius: 40px; box-shadow: 0 8px 40px rgba(0,0,0,0.18); overflow: hidden; }
+  .phone { min-height: 844px; max-height: 844px; border-radius: 32px; box-shadow: 0 6px 28px rgba(11,18,48,0.14); overflow: hidden; }
 }
 
 .scroll { flex: 1; overflow-y: auto; }
@@ -57,7 +58,7 @@ input, textarea { font-family: inherit; }
 
 .overlay {
   position: absolute; inset: 0; z-index: 50;
-  background: rgba(0,0,0,0.5);
+  background: rgba(11,18,48,0.45);
   display: flex; flex-direction: column; justify-content: flex-end;
 }
 .sheet {
@@ -92,15 +93,40 @@ input, textarea { font-family: inherit; }
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Non-phone flows (Moderator CMS) use a wider desktop-style container */
-.wide-panel {
-  width: 100%;
-  max-width: 960px;
-  margin: 0 auto;
-  min-height: 100vh;
-  background: var(--white);
+/* Interaction states shared by icon buttons, inline actions and rows */
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [role=button]:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 2px;
 }
-@media (min-width: 1000px) {
-  #root:has(.wide-panel) { align-items: stretch; padding: 0; }
-  .wide-panel { min-height: 100vh; box-shadow: 0 0 40px rgba(0,0,0,0.06); }
+.icon-btn:hover, .icon-btn:active { background: var(--bg2) !important; }
+.action-btn:hover, .action-btn:active { background: var(--bg2) !important; }
+.row-tap { transition: background 0.12s; }
+.row-tap:hover { background: #fafaff; }
+.row-tap:active { background: var(--bg2); }
+.pill-btn { transition: background 0.12s, border-color 0.12s; }
+.pill-btn:hover { filter: brightness(0.97); }
+.field:focus { border-color: var(--primary) !important; outline: none; box-shadow: 0 0 0 3px rgba(29,91,240,0.12); }
+.field::placeholder { color: var(--text3); }
+
+/* Admin CMS shell: persistent left sidebar on desktop, a compact top bar on narrow screens */
+#root:has(.cms-shell), #root:has(.landing-page) { display: block; padding: 0; overflow-y: auto; }
+.cms-shell { display: flex; min-height: 100vh; width: 100%; background: #F6F7FB; }
+.cms-side { width: 236px; flex-shrink: 0; background: #0B1230; color: #fff; padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+.cms-nav { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; border: none; color: rgba(255,255,255,0.72); font-size: 13.5px; font-weight: 600; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
+.cms-nav:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.cms-nav.active { background: var(--primary); color: #fff; }
+.cms-main { flex: 1; min-width: 0; }
+.cms-table { width: 100%; border-collapse: collapse; }
+.cms-table th { text-align: left; font-size: 11px; font-weight: 700; color: var(--text2); background: #F9FAFD; padding: 10px 14px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em; }
+.cms-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+.cms-table tr.cms-click { cursor: pointer; }
+.cms-table tr.cms-click:hover td { background: #FAFBFF; }
+.cms-table tr:last-child td { border-bottom: none; }
+@media (max-width: 860px) {
+  .cms-shell { flex-direction: column; }
+  .cms-side { position: static; width: 100%; height: auto; flex-direction: row; align-items: center; overflow-x: auto; padding: 10px 12px; gap: 6px; }
+  .cms-side .cms-brand { display: none; }
+  .cms-nav { width: auto; white-space: nowrap; }
+  .cms-table .hide-narrow { display: none; }
+  .cms-side .cms-nav { margin-top: 0 !important; }
+  .cms-main header, .cms-main > div { padding-left: 16px !important; padding-right: 16px !important; }
 }

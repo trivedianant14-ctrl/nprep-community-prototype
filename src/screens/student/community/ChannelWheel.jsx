@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { ROOM_GRADIENT } from '../../shared'
+import { ROOM_GRADIENT, ROOM_TINT } from '../../shared'
 
 // Gamified channel switcher: a "roulette wheel" bent into a semi-circle whose center sits
 // just off the left edge of the screen. Only the slice near angle 0 pokes into view — the
@@ -162,7 +162,8 @@ export default function ChannelWheel({ rooms, currentIndex, onSwitch, topOffset 
           ? Math.max(0.55, Math.min(1.05, 0.5 + 0.55 * cos))
           : Math.max(0.6, Math.min(0.92, 0.58 + 0.34 * cos))
         const isCurrent = i === nearest
-        const grad = ROOM_GRADIENT[room.kind] || '#888'
+        const accent = ROOM_GRADIENT[room.kind] || '#888'
+        const tint = ROOM_TINT[room.kind] || '#eee'
 
         return (
           <button
@@ -173,10 +174,10 @@ export default function ChannelWheel({ rooms, currentIndex, onSwitch, topOffset 
               position: 'absolute', left: 0, top: 0,
               transform: `translate(${x}px, ${y}px) scale(${scale})`,
               opacity, zIndex: isCurrent ? 5 : Math.round(4 - Math.abs(diff)),
-              width: ICON, height: ICON, borderRadius: '50%', border: isCurrent && dragging ? '2px solid white' : 'none',
-              background: grad, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: ICON, height: ICON, borderRadius: '50%', border: isCurrent && dragging ? `2px solid ${accent}` : '1px solid rgba(11,18,48,0.1)',
+              background: tint, display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 13, cursor: 'pointer', padding: 0,
-              boxShadow: isCurrent && dragging ? '0 2px 8px rgba(0,0,0,0.22)' : '0 1px 3px rgba(0,0,0,0.12)',
+              boxShadow: isCurrent && dragging ? '0 2px 8px rgba(11,18,48,0.2)' : 'none',
               transition: 'opacity 0.18s, transform 0.18s',
             }}
           >
@@ -184,7 +185,7 @@ export default function ChannelWheel({ rooms, currentIndex, onSwitch, topOffset 
             {isCurrent && dragging && (
               <span style={{
                 position: 'absolute', left: ICON + 6, top: '50%', transform: 'translateY(-50%)',
-                whiteSpace: 'nowrap', fontSize: 9.5, fontWeight: 800, color: 'white', background: 'rgba(11,18,48,0.78)',
+                whiteSpace: 'nowrap', fontSize: 10.5, fontWeight: 600, color: 'white', background: 'rgba(11,18,48,0.85)',
                 padding: '3px 8px', borderRadius: 20, pointerEvents: 'none',
               }}>
                 {room.label}
