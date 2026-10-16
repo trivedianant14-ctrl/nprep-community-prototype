@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { StatusBar, BackIcon, T1, T2, T3, BD, BG2, PL, PB, PD, P, G, GL, INK, ROOM_GRADIENT, roomKindFromKey, RoomIcon, RoomPill, LikeButton, CommentIcon, ShareIcon, shareThread, AttachmentPreview, ResourceLink, LiveBadge, EmptyState, TagPill, isVisibleToStudent, examRoomKeyFor, timeAgo, FS } from '../../shared'
+import { StatusBar, BackIcon, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, P, G, GL, INK, roomKindFromKey, RoomIcon, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, timeAgo, FS } from '../../shared'
+import PostCard from './PostCard'
+
+const FEED_BG = '#F4F5FA'
 
 function isEnrolled(tile, enrolledRoomKeys, examKey) {
   if (tile.kind === 'exam_room') return examKey ? enrolledRoomKeys.includes(examKey) : false
@@ -16,12 +19,19 @@ function tileForRoomKey(roomKey, roomTiles) {
   return roomTiles.find(t => t.kind === kind) || roomTiles[0]
 }
 
-const sectionLabel = { padding: '16px 16px 8px', fontSize: FS.meta, fontWeight: 700, color: T2, letterSpacing: '0.06em', textTransform: 'uppercase' }
+const sectionRow = { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: '16px 16px 8px' }
+const sectionTitle = { fontSize: FS.heading, fontWeight: 800, color: INK }
 
+// Community home. Patterns borrowed from the Mobbin references: a horizontal strip of your
+// groups (Reddit "Active in these communities", Nextdoor "Groups"), filter chips over a single
+// mixed feed (Lex, Numo), and white post cards on a soft grey ground (Nextdoor, Lex).
 export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpenTile, onOpenThreadInRoom, onLikeThread, onRegisterForWebinar, onOpenThreadFromNotification, onBack }) {
   const [showNotifs, setShowNotifs] = useState(false)
   const [sharedId, setSharedId] = useState(null) // thread id currently showing "Link copied"
-  const { roomTiles, profile, enrolledRoomKeys, exams, notifications, threads, rooms } = state
+  const [filter, setFilter] = useState('all') // 'all' | room tile key
+  const [searching, setSearching] = useState(false)
+  const [query, setQuery] = useState('')
+  const { roomTiles, profile, enrolledRoomKeys, exams, notifications, threads, rooms, contributors = {} } = state
   const examKey = examRoomKeyFor(state, profile.exam)
 
   const share = async (t) => {
@@ -32,47 +42,49 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
     }
   }
 
-  const threadsFor = (tile) => {
-    const keys = roomKeysFor(tile, examKey)
-    return threads.filter(t => keys.includes(t.roomKey) && isVisibleToStudent(t)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  // One mixed feed across rooms, newest first, narrowed by the chip and the search box.
+  let feed = threads.filter(t => isVisibleToStudent(t) && !t.archived).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  const activeTile = filter === 'all' ? null : roomTiles.find(t => t.key === filter)
+  if (activeTile) {
+    const keys = roomKeysFor(activeTile, examKey)
+    feed = feed.filter(t => keys.includes(t.roomKey))
   }
+  const q = query.trim().toLowerCase()
+  if (q) feed = feed.filter(t => t.title.toLowerCase().includes(q) || (t.body || '').toLowerCase().includes(q))
+  feed = feed.slice(0, 30)
 
-  // Reddit-home-style mixed feed — recent posts from every room interleaved, so a student
-  // can see (and like, and join on the spot) what's happening across the whole community
-  // without visiting each room one at a time.
-  const feedPosts = threads
-    .filter(t => isVisibleToStudent(t) && !t.archived)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 8)
+  const needsExam = !profile.exam && activeTile?.kind === 'exam_room'
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'white' }}>
       <StatusBar />
-      <div style={{ padding: '2px 12px 8px 6px', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-        <button onClick={onBack} className="icon-btn" aria-label="Back" style={{ width: 40, height: 40, borderRadius: 12, background: 'none', border: 'none', cursor: 'pointer', color: T1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ padding: '2px 8px 8px 6px', display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+        <button onClick={onBack} className="icon-btn" aria-label="Back" style={iconBtn}>
           <BackIcon />
         </button>
-        <span style={{ fontSize: FS.title, fontWeight: 700, color: INK, flex: 1 }}>Community</span>
-        <button onClick={() => setShowNotifs(true)} className="icon-btn" aria-label="Notifications" style={{ position: 'relative', width: 40, height: 40, borderRadius: 12, background: 'none', border: 'none', cursor: 'pointer', color: T1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: 22, fontWeight: 800, color: INK, flex: 1, letterSpacing: '-0.01em' }}>Community</span>
+        <button onClick={() => { setSearching(s => !s); setQuery('') }} className="icon-btn" aria-label="Search posts" style={{ ...iconBtn, color: searching ? P : T1 }}>
+          <SearchIcon size={21} />
+        </button>
+        <button onClick={() => setShowNotifs(true)} className="icon-btn" aria-label="Notifications" style={{ ...iconBtn, position: 'relative' }}>
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
           {notifications.length > 0 && <span style={{ position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: '50%', background: '#E5385A', border: '1.5px solid white' }} />}
         </button>
       </div>
 
-      <div className="scroll" style={{ flex: 1, overflowY: 'auto', background: 'white' }}>
-        {/* The community itself, with rooms as its groups below */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 16px 14px', flexShrink: 0 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 14, background: P, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: FS.heading, fontWeight: 700, color: INK }}>NPrep Community</div>
-            <div style={{ fontSize: FS.small, color: T2, marginTop: 2 }}>{roomTiles.length} rooms · 5,000+ active students</div>
+      {searching && (
+        <div style={{ padding: '0 16px 10px', flexShrink: 0 }}>
+          <div style={{ position: 'relative' }}>
+            <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', display: 'flex' }}><SearchIcon size={16} color={T3} /></span>
+            <input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="Search posts…" className="field"
+              style={{ width: '100%', border: `1.5px solid ${BD}`, borderRadius: 22, padding: '10px 14px 10px 38px', fontSize: FS.body, background: BG2 }} />
           </div>
         </div>
+      )}
 
+      <div className="scroll" style={{ flex: 1, overflowY: 'auto', background: FEED_BG }}>
         {!profile.exam && (
-          <div style={{ background: PL, border: `1px solid ${PB}`, borderRadius: 14, padding: '14px 16px', margin: '0 16px 6px' }}>
+          <div style={{ background: PL, border: `1px solid ${PB}`, borderRadius: 16, padding: '14px 16px', margin: '12px 12px 0' }}>
             <div style={{ fontSize: FS.body, fontWeight: 700, color: PD, marginBottom: 3 }}>Which exam are you preparing for?</div>
             <div style={{ fontSize: FS.small, color: T2, marginBottom: 12, lineHeight: 1.45 }}>We'll auto-add you to that Exam Room for cutoffs, notifications and strategy.</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -83,91 +95,74 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
           </div>
         )}
 
-        {/* Rooms — one card per room tile: icon, name, purpose and the student's state in it. */}
-        <div style={sectionLabel}>Rooms</div>
-        <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {roomTiles.map(tile => {
-            const joined = isEnrolled(tile, enrolledRoomKeys, examKey)
-            const roomKeys = roomKeysFor(tile, examKey)
-            const list = threadsFor(tile)
-            const engagement = list.reduce((sum, t) => sum + t.replyCount, 0)
-
-            return (
-              <button key={tile.key} onClick={() => onOpenTile(tile)} className="row-tap"
-                style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', background: 'white', border: `1px solid ${BD}`, borderRadius: 14, padding: '11px 12px', cursor: 'pointer' }}>
-                <RoomIcon kind={tile.kind} emoji={tile.emoji} size={42} />
-                <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: FS.body, fontWeight: 700, color: INK }}>{tile.label}</span>
-                  <span style={{ fontSize: FS.meta, color: T2, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>{tile.purpose}</span>
-                </span>
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
-                  {!joined && roomKeys.length > 0 ? (
-                    <span style={{ fontSize: 10.5, fontWeight: 700, color: PD, background: PL, border: `1px solid ${PB}`, borderRadius: 20, padding: '3px 10px' }}>+ Not joined</span>
-                  ) : joined ? (
-                    <span style={{ fontSize: 10.5, fontWeight: 700, color: G, background: GL, borderRadius: 20, padding: '3px 10px' }}>Joined ✓</span>
-                  ) : null}
-                  {joined && engagement > 0 && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, color: T2 }}>
-                      <CommentIcon size={11} color={T3} />{engagement}
+        {/* Your rooms — a horizontal strip of room cards */}
+        {!q && (
+          <>
+            <div style={sectionRow}>
+              <span style={sectionTitle}>Rooms</span>
+              <span style={{ fontSize: FS.small, color: T3 }}>{roomTiles.length} rooms · 5,000+ students</span>
+            </div>
+            <div className="scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '0 12px 4px' }}>
+              {roomTiles.map(tile => {
+                const joined = isEnrolled(tile, enrolledRoomKeys, examKey)
+                const hasRoom = roomKeysFor(tile, examKey).length > 0
+                return (
+                  <button key={tile.key} onClick={() => onOpenTile(tile)} className="room-card"
+                    style={{ flex: '0 0 auto', width: 136, textAlign: 'left', background: 'white', border: `1px solid ${BD}`, borderRadius: 16, padding: 12, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 1px 2px rgba(11,18,48,0.05)' }}>
+                    <RoomIcon kind={tile.kind} emoji={tile.emoji} size={40} />
+                    <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <span style={{ fontSize: FS.body, fontWeight: 700, color: INK }}>{tile.label}</span>
+                      <span style={{ fontSize: FS.meta, color: T3 }}>{tile.cadence}</span>
                     </span>
-                  )}
-                </span>
-              </button>
-            )
-          })}
-        </div>
+                    {joined
+                      ? <span style={{ fontSize: 10.5, fontWeight: 700, color: G, background: GL, borderRadius: 20, padding: '3px 10px', alignSelf: 'flex-start' }}>Joined ✓</span>
+                      : hasRoom
+                        ? <span style={{ fontSize: 10.5, fontWeight: 700, color: PD, background: PL, border: `1px solid ${PB}`, borderRadius: 20, padding: '2px 10px', alignSelf: 'flex-start' }}>+ Join</span>
+                        : <span style={{ fontSize: 10.5, fontWeight: 700, color: T3, background: BG2, borderRadius: 20, padding: '3px 10px', alignSelf: 'flex-start' }}>Pick exam</span>}
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
 
-        {feedPosts.length > 0 && (
-          <div style={{ marginTop: 8 }}>
-            <div style={sectionLabel}>Recent across all rooms</div>
-            {feedPosts.map(t => {
-              const kind = roomKindFromKey(t.roomKey)
-              const tile = tileForRoomKey(t.roomKey, roomTiles)
-              const room = rooms.find(r => r.key === t.roomKey)
-              const joined = enrolledRoomKeys.includes(t.roomKey)
+        {/* Feed filter chips — stay pinned while the feed scrolls */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 5, background: FEED_BG, padding: '14px 0 10px' }}>
+          <div className="scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '0 12px' }}>
+            {[{ key: 'all', label: 'All' }, ...roomTiles].map(c => {
+              const on = filter === c.key
               return (
-                <div key={t.id} role="button" tabIndex={0} className="row-tap"
-                  onClick={() => onOpenThreadInRoom(t.id, tile)}
-                  onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onOpenThreadInRoom(t.id, tile)}
-                  style={{ padding: '14px 16px', borderTop: `1px solid ${BD}`, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <RoomPill kind={kind} emoji={tile.emoji}>{room ? room.label : tile.label}</RoomPill>
-                    {t.isLive && <LiveBadge />}
-                    {t.approvalStatus === 'pending' && <TagPill tone="poll">⏳ Waiting for approval</TagPill>}
-                    <span style={{ fontSize: FS.meta, color: T3, marginLeft: 'auto' }}>{timeAgo(t.createdAt)}</span>
-                  </div>
-                  <div style={{ fontSize: FS.body + 0.5, fontWeight: 700, color: INK, lineHeight: 1.4 }}>{t.title}</div>
-                  {t.body && <div style={{ fontSize: FS.small, color: T2, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.body}</div>}
-                  {t.attachmentUrl && <div onClick={e => e.stopPropagation()}><AttachmentPreview url={t.attachmentUrl} name={t.attachmentName} type={t.attachmentType} /></div>}
-                  {t.resourceUrl && <div onClick={e => e.stopPropagation()}><ResourceLink url={t.resourceUrl} name={t.resourceName} /></div>}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 1, flexWrap: 'wrap' }}>
-                    <LikeButton liked={t.likedByMe} count={t.likeCount} onToggle={e => { e.stopPropagation(); onLikeThread(t.id) }} size={15} />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <CommentIcon size={15} />
-                      <span style={{ fontSize: FS.meta, fontWeight: 600, color: T2 }}>{t.replyCount} comment{t.replyCount === 1 ? '' : 's'}</span>
-                    </div>
-                    <button onClick={e => { e.stopPropagation(); share(t) }} className="action-btn" style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '6px 4px', borderRadius: 8 }}>
-                      <ShareIcon size={15} />
-                      <span style={{ fontSize: FS.meta, fontWeight: 600, color: T2 }}>{sharedId === t.id ? 'Link copied' : 'Share'}</span>
-                    </button>
-                    {t.roomKey === 'webinar_threads' && t.startsAt && !t.archived && (
-                      <button onClick={e => { e.stopPropagation(); onRegisterForWebinar(t.id) }} className="pill-btn"
-                        style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: t.registeredByMe ? T2 : PD, background: t.registeredByMe ? BG2 : PL, border: `1px solid ${t.registeredByMe ? BD : PB}`, borderRadius: 20, padding: '5px 12px', cursor: 'pointer' }}>
-                        {t.registeredByMe ? 'Registered ✓' : 'Register'}
-                      </button>
-                    )}
-                    {!joined && !(t.roomKey === 'webinar_threads' && t.startsAt && !t.archived) && (
-                      <button onClick={e => { e.stopPropagation(); onSetRoomJoined(t.roomKey, true) }} className="pill-btn"
-                        style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: PD, background: PL, border: `1px solid ${PB}`, borderRadius: 20, padding: '5px 12px', cursor: 'pointer' }}>
-                        Join
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <button key={c.key} onClick={() => setFilter(c.key)} className="pill-btn"
+                  style={{ flex: '0 0 auto', fontSize: FS.small, fontWeight: 700, padding: '7px 14px', borderRadius: 20, cursor: 'pointer', border: `1.5px solid ${on ? INK : BD}`, background: on ? INK : 'white', color: on ? 'white' : T1 }}>
+                  {c.label}
+                </button>
               )
             })}
           </div>
+        </div>
+
+        {needsExam && (
+          <EmptyState icon="🎯" title="Pick your exam">Choose your exam above to see its Exam Room posts.</EmptyState>
         )}
+        {!needsExam && feed.length === 0 && (
+          <EmptyState icon={activeTile?.emoji || '💬'} title={q ? 'No matching posts' : 'Nothing here yet'}>
+            {q ? 'Try a different word.' : 'No posts in this room yet — check back soon.'}
+          </EmptyState>
+        )}
+
+        {feed.map(t => {
+          const tile = tileForRoomKey(t.roomKey, roomTiles)
+          const room = rooms.find(r => r.key === t.roomKey)
+          return (
+            <PostCard key={t.id} t={t} tile={tile} roomLabel={room ? room.label : tile.label} contributors={contributors}
+              joined={enrolledRoomKeys.includes(t.roomKey)} sharedId={sharedId}
+              onOpen={() => onOpenThreadInRoom(t.id, tile)}
+              onLike={() => onLikeThread(t.id)}
+              onShare={() => share(t)}
+              onRegister={() => onRegisterForWebinar(t.id)}
+              onJoin={() => onSetRoomJoined(t.roomKey, true)} />
+          )
+        })}
         <div style={{ height: 16 }} />
       </div>
 
@@ -199,3 +194,5 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
     </div>
   )
 }
+
+const iconBtn = { width: 40, height: 40, borderRadius: 12, background: 'none', border: 'none', cursor: 'pointer', color: T1, display: 'flex', alignItems: 'center', justifyContent: 'center' }

@@ -1,9 +1,14 @@
 import { useState } from 'react'
-import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, G, GL, INK, CommentIcon, LikeButton, ROOM_GRADIENT, ROOM_TINT, RoomIcon, TagPill, ShareIcon, shareThread, AttachmentPreview, ResourceLink, LiveBadge, EmptyState, isVisibleToStudent, examRoomKeyFor, timeAgo, FS } from '../../shared'
-import ChannelWheel from './ChannelWheel'
+import { BackHeader, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, G, GL, INK, ROOM_GRADIENT, ROOM_TINT, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, FS } from '../../shared'
+import PostCard from './PostCard'
 
 const CONTRIBUTOR_POST_KINDS = ['subject_room', 'exam_room']
+const FEED_BG = '#F4F5FA'
 
+// A single room. Header follows the group pages in Glassdoor / Insight Timer / Reddit (icon,
+// name, purpose, one big Join button); Recent | Top tabs follow Runna; the subject chips
+// follow Reddit's flair filter; and the room chips replace the old edge wheel for hopping
+// between rooms the way Lex / Weverse switch categories.
 export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOpenThread, onSwitchRoom, onLikeThread, onCreatePost, onRegisterForWebinar, onBack }) {
   const { profile, enrolledRoomKeys, exams, threads, roomTiles, subjectTags } = state
   const [showCompose, setShowCompose] = useState(false)
@@ -12,6 +17,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
   const [sharedId, setSharedId] = useState(null) // thread id currently showing "Link copied"
   const [search, setSearch] = useState('')
   const [subjectFilter, setSubjectFilter] = useState('all')
+  const [tab, setTab] = useState('recent') // 'recent' | 'top'
   const [sentNotice, setSentNotice] = useState(false) // contributor just posted — held for approval
 
   const share = async (t) => {
@@ -25,14 +31,15 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
   const roomKey = tile.kind === 'exam_room' ? examRoomKeyFor(state, profile.exam) : tile.key
   const joined = roomKey ? enrolledRoomKeys.includes(roomKey) : false
   const isYtLectures = tile.kind === 'yt_lectures'
-  let list = roomKey ? threads.filter(t => t.roomKey === roomKey && isVisibleToStudent(t)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : []
-  if (isYtLectures) {
-    if (search.trim()) list = list.filter(t => t.title.toLowerCase().includes(search.trim().toLowerCase()))
-    if (subjectFilter !== 'all') list = list.filter(t => t.subjectTag === subjectFilter)
-  }
+  const hasSubjectFilter = isYtLectures || tile.kind === 'subject_room'
+  const allInRoom = roomKey ? threads.filter(t => t.roomKey === roomKey && isVisibleToStudent(t)) : []
+  let list = [...allInRoom]
+  if (isYtLectures && search.trim()) list = list.filter(t => t.title.toLowerCase().includes(search.trim().toLowerCase()))
+  if (hasSubjectFilter && subjectFilter !== 'all') list = list.filter(t => t.subjectTag === subjectFilter)
+  list.sort(tab === 'top'
+    ? (a, b) => (b.likeCount * 2 + b.replyCount) - (a.likeCount * 2 + a.replyCount) || new Date(b.createdAt) - new Date(a.createdAt)
+    : (a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   const grad = ROOM_GRADIENT[tile.kind]
-  const currentIndex = Math.max(0, roomTiles.findIndex(t => t.key === tile.key))
-  const HEADER_H = 54
 
   const contributor = state.contributors?.demo
   const roomAcceptsContributorPosts = CONTRIBUTOR_POST_KINDS.includes(tile.kind)
@@ -50,44 +57,75 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'white', position: 'relative' }}>
-      <BackHeader onBack={onBack} title={tile.label} right={roomKey && (
-        <button onClick={() => onSetRoomJoined(roomKey, !joined)} className="pill-btn"
-          style={{ fontSize: FS.small, fontWeight: 700, padding: '7px 14px', borderRadius: 20, cursor: 'pointer', border: joined ? `1px solid ${BD}` : 'none', background: joined ? BG2 : grad, color: joined ? T2 : 'white' }}>
-          {joined ? 'Joined ✓' : 'Join'}
-        </button>
-      )} />
-      <ChannelWheel rooms={roomTiles} currentIndex={currentIndex} onSwitch={onSwitchRoom} topOffset={HEADER_H} />
+      <BackHeader onBack={onBack} title={tile.label} />
 
-      <div className="scroll" style={{ flex: 1, overflowY: 'auto' }}>
-        {/* Room header: icon, name and what the room is for */}
-        <div style={{ background: ROOM_TINT[tile.kind] || BG2, padding: '16px 18px 16px 28px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 46, height: 46, borderRadius: 14, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{tile.emoji}</div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: FS.heading, fontWeight: 700, color: INK }}>{tile.label}</div>
-            <div style={{ fontSize: FS.small, color: T2, marginTop: 2, lineHeight: 1.4 }}>{tile.purpose}</div>
+      <div className="scroll" style={{ flex: 1, overflowY: 'auto', background: FEED_BG }}>
+        {/* Room header: icon, name, purpose, members/cadence and one big Join button */}
+        <div style={{ background: ROOM_TINT[tile.kind] || BG2, padding: '18px 16px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 18, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, boxShadow: '0 1px 3px rgba(11,18,48,0.08)' }}>{tile.emoji}</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: INK, letterSpacing: '-0.01em' }}>{tile.label}</div>
+              <div style={{ fontSize: FS.small, color: T2, marginTop: 3, lineHeight: 1.4 }}>{tile.purpose}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: FS.small, fontWeight: 600, color: T1, marginTop: 12 }}>
+            {allInRoom.length} post{allInRoom.length === 1 ? '' : 's'} · {tile.cadence}
+          </div>
+          {roomKey && (
+            <button onClick={() => onSetRoomJoined(roomKey, !joined)} className="pill-btn"
+              style={{ width: '100%', marginTop: 12, fontSize: FS.body + 0.5, fontWeight: 700, padding: '12px', borderRadius: 14, cursor: 'pointer', border: joined ? `1.5px solid ${BD}` : 'none', background: joined ? 'white' : grad, color: joined ? T2 : 'white' }}>
+              {joined ? 'Joined ✓' : 'Join room'}
+            </button>
+          )}
+        </div>
+
+        {/* Tabs + room switcher stay pinned under the header */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 5, background: 'white', borderBottom: `1px solid ${BD}` }}>
+          <div className="scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '10px 12px 4px' }}>
+            {roomTiles.map(rt => {
+              const on = rt.key === tile.key
+              return (
+                <button key={rt.key} onClick={() => !on && onSwitchRoom(rt)} className="pill-btn" aria-label={`Open ${rt.label}`}
+                  style={{ flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: FS.small, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: on ? 'default' : 'pointer', border: `1.5px solid ${on ? ROOM_GRADIENT[rt.kind] : BD}`, background: on ? ROOM_TINT[rt.kind] : 'white', color: on ? ROOM_GRADIENT[rt.kind] : T2 }}>
+                  <span style={{ fontSize: 12 }}>{rt.emoji}</span>{rt.label}
+                </button>
+              )
+            })}
+          </div>
+          <div style={{ display: 'flex' }}>
+            {[['recent', 'Recent'], ['top', 'Top']].map(([id, label]) => (
+              <button key={id} onClick={() => setTab(id)}
+                style={{ flex: 1, padding: '11px 0 10px', background: 'none', border: 'none', borderBottom: `2.5px solid ${tab === id ? INK : 'transparent'}`, fontSize: FS.body, fontWeight: tab === id ? 800 : 600, color: tab === id ? INK : T3, cursor: 'pointer' }}>
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
         {isYtLectures && (
-          <div style={{ padding: '14px 16px 6px 28px' }}>
-            <div style={{ position: 'relative', marginBottom: 10 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={T3} strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <div style={{ padding: '12px 12px 0' }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', display: 'flex' }}><SearchIcon size={16} color={T3} /></span>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search lectures by name…" className="field"
-                style={{ width: '100%', border: `1.5px solid ${BD}`, borderRadius: 12, padding: '10px 14px 10px 38px', fontSize: FS.body, background: BG2 }} />
-            </div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {['all', ...subjectTags].map(s => (
-                <button key={s} onClick={() => setSubjectFilter(s)} className="pill-btn"
-                  style={{ fontSize: FS.tag + 0.5, fontWeight: 600, padding: '6px 12px', borderRadius: 20, cursor: 'pointer', border: `1px solid ${subjectFilter === s ? PB : BD}`, background: subjectFilter === s ? PL : 'white', color: subjectFilter === s ? PD : T2 }}>
-                  {s === 'all' ? 'All subjects' : s}
-                </button>
-              ))}
+                style={{ width: '100%', border: `1.5px solid ${BD}`, borderRadius: 22, padding: '10px 14px 10px 38px', fontSize: FS.body, background: 'white' }} />
             </div>
           </div>
         )}
 
+        {hasSubjectFilter && (
+          <div className="scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '12px 12px 2px' }}>
+            {['all', ...subjectTags].map(s => (
+              <button key={s} onClick={() => setSubjectFilter(s)} className="pill-btn"
+                style={{ flex: '0 0 auto', fontSize: FS.tag + 0.5, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: 'pointer', border: `1px solid ${subjectFilter === s ? PB : BD}`, background: subjectFilter === s ? PL : 'white', color: subjectFilter === s ? PD : T2 }}>
+                {s === 'all' ? 'All subjects' : s}
+              </button>
+            ))}
+          </div>
+        )}
+
         {tile.kind === 'exam_room' && !profile.exam && (
-          <div style={{ background: PL, border: `1px solid ${PB}`, borderRadius: 14, padding: '14px 16px', margin: '14px 16px 14px 28px' }}>
+          <div style={{ background: PL, border: `1px solid ${PB}`, borderRadius: 16, padding: '14px 16px', margin: '12px 12px 0' }}>
             <div style={{ fontSize: FS.body, fontWeight: 700, color: PD, marginBottom: 10 }}>Pick your exam to see this room's threads</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {exams.map(e => (
@@ -98,77 +136,48 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
         )}
 
         {badgePaused && (
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#FFF8E8', border: '1px solid #FFE0AD', borderRadius: 12, padding: '11px 14px', margin: '14px 16px 0 28px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#FFF8E8', border: '1px solid #FFE0AD', borderRadius: 14, padding: '11px 14px', margin: '12px 12px 0' }}>
             <span style={{ fontSize: 15, lineHeight: 1.2 }}>⏸️</span>
             <span style={{ fontSize: FS.small, fontWeight: 600, color: '#8A5300', lineHeight: 1.45 }}>Your Contributor badge is paused after {state.inactivityDays || 30} days with no activity. Comment again to bring it back — posting needs a fresh approval from NPrep.</span>
           </div>
         )}
 
         {sentNotice && (
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: GL, border: '1px solid #97C459', borderRadius: 12, padding: '11px 14px', margin: '14px 16px 0 28px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: GL, border: '1px solid #97C459', borderRadius: 14, padding: '11px 14px', margin: '12px 12px 0' }}>
             <span style={{ fontSize: 15, lineHeight: 1.2 }}>✅</span>
             <span style={{ fontSize: FS.small, fontWeight: 600, color: G, lineHeight: 1.45 }}>Sent for approval. Your post will show to other students once NPrep approves it.</span>
           </div>
         )}
 
         {pendingApproval && (
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#FFF8E8', border: '1px solid #FFE0AD', borderRadius: 12, padding: '11px 14px', margin: '14px 16px 0 28px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#FFF8E8', border: '1px solid #FFE0AD', borderRadius: 14, padding: '11px 14px', margin: '12px 12px 0' }}>
             <span style={{ fontSize: 15, lineHeight: 1.2 }}>🎖️</span>
             <span style={{ fontSize: FS.small, fontWeight: 600, color: '#8A5300', lineHeight: 1.45 }}>You're a Top Contributor — posting here opens up once NPrep approves you.</span>
           </div>
         )}
 
+        <div style={{ height: 12 }} />
+
         {roomKey && list.length === 0 && (
           <EmptyState icon={tile.emoji}>
-            {isYtLectures && (search.trim() || subjectFilter !== 'all') ? 'No lectures match your search/filter.' : 'No threads yet in this room.'}
+            {isYtLectures && search.trim() ? 'No lectures match your search.' : hasSubjectFilter && subjectFilter !== 'all' ? 'No posts for this subject yet.' : 'No threads yet in this room.'}
           </EmptyState>
         )}
 
-        {list.map(t => {
-          const hot = Date.now() - new Date(t.createdAt).getTime() < 3 * 60 * 60 * 1000
-          return (
-            <div key={t.id} role="button" tabIndex={0} onClick={() => onOpenThread(t.id)} className="row-tap"
-              onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onOpenThread(t.id)}
-              style={{ width: '100%', textAlign: 'left', borderBottom: `1px solid ${BD}`, padding: '14px 16px 12px 28px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 7 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                {t.subjectTag && <TagPill tone="subject">{t.subjectTag}</TagPill>}
-                {t.poll && <TagPill tone="poll">📊 Poll</TagPill>}
-                {t.isLive && <LiveBadge />}
-                {t.approvalStatus === 'pending' && <TagPill tone="poll">⏳ Waiting for approval</TagPill>}
-                {hot && !t.archived && !t.isLive && <span style={{ fontSize: FS.tag, fontWeight: 700, color: '#B9490A', background: '#FFF0E6', borderRadius: 20, padding: '3px 9px' }}>🔥 Hot</span>}
-                <span style={{ fontSize: FS.meta, color: T3, marginLeft: 'auto' }}>{timeAgo(t.createdAt)}</span>
-              </div>
-              <div style={{ fontSize: FS.body + 0.5, fontWeight: 700, color: INK, lineHeight: 1.4 }}>{t.title}</div>
-              {t.body && <div style={{ fontSize: FS.small, color: T2, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.body}</div>}
-              {t.attachmentUrl && <div onClick={e => e.stopPropagation()}><AttachmentPreview url={t.attachmentUrl} name={t.attachmentName} type={t.attachmentType} /></div>}
-              {t.resourceUrl && <div onClick={e => e.stopPropagation()}><ResourceLink url={t.resourceUrl} name={t.resourceName} /></div>}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 1 }}>
-                <LikeButton liked={t.likedByMe} count={t.likeCount} onToggle={e => { e.stopPropagation(); onLikeThread(t.id) }} size={15} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <CommentIcon size={15} />
-                  <span style={{ fontSize: FS.meta, fontWeight: 600, color: T2 }}>{t.replyCount} comment{t.replyCount === 1 ? '' : 's'}</span>
-                </div>
-                <button onClick={e => { e.stopPropagation(); share(t) }} className="action-btn" style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '6px 4px', borderRadius: 8, marginLeft: t.roomKey === 'webinar_threads' && t.startsAt ? 0 : 'auto' }}>
-                  <ShareIcon size={15} />
-                  <span style={{ fontSize: FS.meta, fontWeight: 600, color: T2 }}>{sharedId === t.id ? 'Link copied' : 'Share'}</span>
-                </button>
-                {t.roomKey === 'webinar_threads' && t.startsAt && !t.archived && (
-                  <button onClick={e => { e.stopPropagation(); onRegisterForWebinar(t.id) }} className="pill-btn"
-                    style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: t.registeredByMe ? T2 : PD, background: t.registeredByMe ? BG2 : PL, border: `1px solid ${t.registeredByMe ? BD : PB}`, borderRadius: 20, padding: '5px 12px', cursor: 'pointer' }}>
-                    {t.registeredByMe ? 'Registered ✓' : 'Register'}
-                  </button>
-                )}
-              </div>
-            </div>
-          )
-        })}
+        {list.map(t => (
+          <PostCard key={t.id} t={t} tile={tile} showRoom={false} contributors={state.contributors} sharedId={sharedId}
+            onOpen={() => onOpenThread(t.id)}
+            onLike={() => onLikeThread(t.id)}
+            onShare={() => share(t)}
+            onRegister={() => onRegisterForWebinar(t.id)} />
+        ))}
         <div style={{ height: 80 }} />
       </div>
 
       {canPost && (
         <button onClick={() => setShowCompose(true)} aria-label="Create post"
-          style={{ position: 'absolute', right: 18, bottom: 18, width: 52, height: 52, borderRadius: 16, background: grad, color: 'white', border: 'none', boxShadow: '0 4px 14px rgba(11,18,48,0.22)', fontSize: 26, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          +
+          style={{ position: 'absolute', right: 18, bottom: 18, height: 52, padding: '0 20px 0 16px', borderRadius: 26, background: grad, color: 'white', border: 'none', boxShadow: '0 4px 14px rgba(11,18,48,0.25)', fontSize: FS.body + 0.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 24, lineHeight: 1, fontWeight: 500 }}>+</span> Post
         </button>
       )}
 

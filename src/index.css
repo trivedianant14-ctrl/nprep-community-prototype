@@ -130,3 +130,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .cms-side .cms-nav { margin-top: 0 !important; }
   .cms-main header, .cms-main > div { padding-left: 16px !important; padding-right: 16px !important; }
 }
+
+.post-card { transition: background 0.12s, box-shadow 0.12s; }
+.post-card:hover { box-shadow: 0 2px 8px rgba(11,18,48,0.08) !important; }
+.post-card:active { background: #fafaff !important; }
+.room-card { transition: transform 0.12s, box-shadow 0.12s; }
+.room-card:active { transform: scale(0.97); }

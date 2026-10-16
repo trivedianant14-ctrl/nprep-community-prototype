@@ -119,6 +119,24 @@ export function examRoomKeyFor(state, exam) {
   return exam ? state.examRoomKeys?.[exam] || null : null
 }
 
+// Blue check next to NPrep Team — the official-account mark (LinkedIn/Reddit pattern).
+export function VerifiedIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-label="Official NPrep account" style={{ flexShrink: 0 }}>
+      <path fill={P} d="M12 2l2.4 2.1 3.2-.2.9 3.1 2.7 1.8-1.1 3 1.1 3-2.7 1.8-.9 3.1-3.2-.2L12 22l-2.4-2.1-3.2.2-.9-3.1L2.8 15l1.1-3-1.1-3 2.7-1.8.9-3.1 3.2.2z"/>
+      <polyline points="8.5,12 11,14.5 15.5,9.5" fill="none" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+export function SearchIcon({ size = 20, color = 'currentColor' }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+}
+
+export function ChevronRight({ size = 16, color = T3 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9,18 15,12 9,6"/></svg>
+}
+
 export function FlagIcon({ size = 13, color = T2 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-2 4.5 2 4.5H4"/></svg>
 }

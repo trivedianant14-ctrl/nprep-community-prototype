@@ -23,7 +23,7 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
 
   const goHome = () => setScreen('home')
   const goCommunity = () => setScreen('community')
-  // ChannelWheel switch — jumps straight into the new room's thread list without a popup
+  // Room-chip switch — jumps straight into the new room's thread list without a popup
   // and without detouring back through the Community landing screen.
   const switchRoom = (tile) => { setActiveTile(tile); setScreen('room') }
 
@@ -69,7 +69,6 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             onLikeThread={onLikeThread}
             onLikeReply={onLikeReply}
             onReportReply={onReportReply}
-            onSwitchRoom={switchRoom}
             onRegisterForWebinar={onRegisterForWebinar}
             onBack={() => setScreen(activeTile ? 'room' : 'community')}
           />
