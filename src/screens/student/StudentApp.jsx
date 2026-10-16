@@ -5,7 +5,7 @@ import RoomView from './community/RoomView'
 import ThreadDetail from './community/ThreadDetail'
 import { P, BD, T3 } from '../shared'
 
-export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoined, onPostReply, onVote, onLikeThread, onLikeReply, onCreatePost, onRegisterForWebinar, onExit }) {
+export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoined, onPostReply, onVote, onLikeThread, onLikeReply, onCreatePost, onReportReply, onRegisterForWebinar, onExit }) {
   const [screen, setScreen] = useState('home') // home | community | room | thread
   const [activeTile, setActiveTile] = useState(null)
   const [activeThreadId, setActiveThreadId] = useState(null)
@@ -68,6 +68,7 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             onVote={onVote}
             onLikeThread={onLikeThread}
             onLikeReply={onLikeReply}
+            onReportReply={onReportReply}
             onSwitchRoom={switchRoom}
             onRegisterForWebinar={onRegisterForWebinar}
             onBack={() => setScreen(activeTile ? 'room' : 'community')}

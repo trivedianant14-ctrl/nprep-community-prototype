@@ -3,11 +3,11 @@ import { P, PL, PB, PD, T1, T2, T3, BD, BG2, G, GL, GB, R, RL, RB, INK, timeAgo,
 
 const TABS = [
   { id: 'create', label: 'Create Thread', title: 'Create thread', desc: 'Post a thread in any room, with an optional poll and media.', icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> },
-  { id: 'moderate', label: 'Moderate', title: 'Moderate', desc: 'Hide threads, and review, endorse, pin or hide replies.', icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l8 3v6c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5z"/></svg> },
+  { id: 'moderate', label: 'Moderate', title: 'Moderate', desc: 'Approve contributor posts, handle reported comments, hide threads, and endorse, pin or remove replies.', icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l8 3v6c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5z"/></svg> },
   { id: 'contributors', label: 'Contributors', title: 'Contributors', desc: 'Approve students who have earned posting rights.', icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.5-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16 15.2c2.5.3 4.5 2 4.5 4.8"/></svg> },
 ]
 
-export default function CommunityCMS({ state, onCreateThread, onSetThreadHidden, onSetReplyHidden, onPostReply, onNprepLikeReply, onTogglePinReply, onApproveContributor, onExit }) {
+export default function CommunityCMS({ state, onCreateThread, onSetThreadHidden, onSetReplyHidden, onPostReply, onNprepLikeReply, onTogglePinReply, onApproveContributor, onDismissReports, onDecideThread, onExit }) {
   const [tab, setTab] = useState('create') // create | moderate | contributors
   const { rooms, subjectTags, questions } = state
   const current = TABS.find(t => t.id === tab)
@@ -41,7 +41,7 @@ export default function CommunityCMS({ state, onCreateThread, onSetThreadHidden,
 
         <div style={{ padding: '24px 32px 64px', maxWidth: 1040 }}>
           {tab === 'create' && <CreateThreadTab rooms={rooms} subjectTags={subjectTags} questions={questions} onCreateThread={onCreateThread} />}
-          {tab === 'moderate' && <ModerateTab state={state} onSetThreadHidden={onSetThreadHidden} onSetReplyHidden={onSetReplyHidden} onPostReply={onPostReply} onNprepLikeReply={onNprepLikeReply} onTogglePinReply={onTogglePinReply} />}
+          {tab === 'moderate' && <ModerateTab state={state} onSetThreadHidden={onSetThreadHidden} onSetReplyHidden={onSetReplyHidden} onPostReply={onPostReply} onNprepLikeReply={onNprepLikeReply} onTogglePinReply={onTogglePinReply} onDismissReports={onDismissReports} onDecideThread={onDecideThread} />}
           {tab === 'contributors' && <ContributorsTab state={state} onApproveContributor={onApproveContributor} />}
         </div>
       </main>
@@ -260,13 +260,65 @@ function StatusBadge({ tone, children }) {
   return <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 11, fontWeight: 600, color: t.fg, background: t.bg, borderRadius: 20, padding: '3px 10px', whiteSpace: 'nowrap' }}>{children}</span>
 }
 
-function ModerateTab({ state, onSetThreadHidden, onSetReplyHidden, onPostReply, onNprepLikeReply, onTogglePinReply }) {
+function ModerateTab({ state, onSetThreadHidden, onSetReplyHidden, onPostReply, onNprepLikeReply, onTogglePinReply, onDismissReports, onDecideThread }) {
   const [expanded, setExpanded] = useState(null)
   const { threads, repliesByThread, rooms, contributors = {} } = state
   const roomLabel = (key) => rooms.find(r => r.key === key)?.label || key
   const sorted = [...threads].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
+  // Contributor posts held for approval, and comments students have reported (open reports only).
+  const pendingPosts = sorted.filter(t => t.approvalStatus === 'pending')
+  const reported = []
+  for (const t of threads) {
+    for (const r of repliesByThread[t.id] || repliesByThread[String(t.id)] || []) {
+      if (!r.hidden && r.reportCount > 0) reported.push({ thread: t, reply: r })
+    }
+  }
+  reported.sort((a, b) => b.reply.reportCount - a.reply.reportCount)
+  const reasonSummary = (r) => Object.entries(r.reportReasons.reduce((m, x) => { m[x] = (m[x] || 0) + 1; return m }, {}))
+    .map(([reason, n]) => (n > 1 ? `${reason} ×${n}` : reason)).join(', ')
+
   return (
+    <div>
+      {pendingPosts.length > 0 && (
+        <QueueCard title="Awaiting approval" count={pendingPosts.length} tone="amber" hint="Posts written by Top Contributors. Students can't see them until you approve.">
+          {pendingPosts.map(t => (
+            <div key={t.id} style={queueRow}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 700, color: INK, fontSize: 13.5 }}>{t.title}</span>
+                  <StatusBadge tone="grey">{roomLabel(t.roomKey)}</StatusBadge>
+                </div>
+                <div style={{ fontSize: 12, color: T2, marginTop: 3 }}>by {t.authorName || 'Unknown'} · {timeAgo(t.createdAt)}</div>
+                {t.body && <div style={{ fontSize: 12.5, color: T1, marginTop: 6, lineHeight: 1.5 }}>{t.body}</div>}
+              </div>
+              <button onClick={() => onDecideThread(t.id, 'approved')} style={{ ...smBtn, flexShrink: 0, borderColor: GB, color: G, background: GL }}>Approve</button>
+              <button onClick={() => onDecideThread(t.id, 'rejected')} style={{ ...smBtn, flexShrink: 0, borderColor: RB, color: R, background: RL }}>Reject</button>
+            </div>
+          ))}
+        </QueueCard>
+      )}
+
+      {reported.length > 0 && (
+        <QueueCard title="Reported comments" count={reported.length} tone="red" hint="Students flagged these. Delete the comment, or dismiss the report if it's fine.">
+          {reported.map(({ thread, reply }) => (
+            <div key={reply.id} style={queueRow}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 700, color: T1, fontSize: 12.5 }}>{reply.authorName}</span>
+                  <StatusBadge tone="red">Reported ×{reply.reportCount}</StatusBadge>
+                  <span style={{ fontSize: 11.5, color: T3 }}>{reasonSummary(reply)}</span>
+                </div>
+                <div style={{ fontSize: 13, color: T1, marginTop: 5, lineHeight: 1.5 }}>{reply.body}</div>
+                <div style={{ fontSize: 11.5, color: T3, marginTop: 4 }}>in “{thread.title}” · {roomLabel(thread.roomKey)}</div>
+              </div>
+              <button onClick={() => onDismissReports(reply.id)} style={{ ...smBtn, flexShrink: 0 }}>Dismiss</button>
+              <button onClick={() => onSetReplyHidden(reply.id, true)} style={{ ...smBtn, flexShrink: 0, borderColor: RB, color: R, background: RL }}>Delete</button>
+            </div>
+          ))}
+        </QueueCard>
+      )}
+
     <div style={{ background: 'white', border: `1px solid ${BD}`, borderRadius: 14, overflow: 'hidden' }}>
       <table className="cms-table">
         <thead>
@@ -297,7 +349,7 @@ function ModerateTab({ state, onSetThreadHidden, onSetReplyHidden, onPostReply, 
                 </td>
                 <td style={{ color: T2 }}>{replies.length}</td>
                 <td className="hide-narrow" style={{ color: T2, whiteSpace: 'nowrap' }}>{timeAgo(t.createdAt)}</td>
-                <td>{t.hidden ? <StatusBadge tone="grey">Hidden</StatusBadge> : <StatusBadge tone="green">Visible</StatusBadge>}</td>
+                <td>{t.approvalStatus === 'pending' ? <StatusBadge tone="amber">Awaiting approval</StatusBadge> : t.approvalStatus === 'rejected' ? <StatusBadge tone="red">Rejected</StatusBadge> : t.hidden ? <StatusBadge tone="grey">Hidden</StatusBadge> : <StatusBadge tone="green">Visible</StatusBadge>}</td>
                 <td style={{ textAlign: 'right' }}>
                   <button onClick={e => { e.stopPropagation(); onSetThreadHidden(t.id, !t.hidden) }} style={{ ...smBtn, borderColor: t.hidden ? GB : RB, color: t.hidden ? G : R, background: t.hidden ? GL : RL }}>
                     {t.hidden ? 'Unhide thread' : 'Hide thread'}
@@ -317,12 +369,16 @@ function ModerateTab({ state, onSetThreadHidden, onSetReplyHidden, onPostReply, 
                             <ContributorBadge tier={contributorTier(contributors[r.studentKey])} />
                             {r.pinned && <StatusBadge tone="amber">Pinned</StatusBadge>}
                             {r.likedByNPrepTeam && <NPrepMark size={14} />}
+                            {r.reportCount > 0 && !r.hidden && <StatusBadge tone="red">Reported ×{r.reportCount}</StatusBadge>}
                             <span style={{ fontWeight: 400, color: T3, fontSize: 11 }}>{timeAgo(r.createdAt)}</span>
                           </div>
                           <div style={{ fontSize: 12.5, color: r.hidden ? T3 : T1, fontStyle: r.hidden ? 'italic' : 'normal', marginTop: 3, lineHeight: 1.45 }}>{r.hidden ? 'This reply was removed' : r.body}</div>
                         </div>
                         {!r.hidden && (
                           <>
+                            {r.reportCount > 0 && (
+                              <button onClick={() => onDismissReports(r.id)} style={{ ...smBtn, flexShrink: 0 }}>Dismiss report</button>
+                            )}
                             <button onClick={() => onNprepLikeReply(r.id)} style={{ ...smBtn, flexShrink: 0, borderColor: r.likedByNPrepTeam ? PB : BD, color: r.likedByNPrepTeam ? PD : T2, background: r.likedByNPrepTeam ? PL : 'white' }}>
                               {r.likedByNPrepTeam ? '❤️ NPrep liked' : '🤍 NPrep like'}
                             </button>
@@ -346,6 +402,20 @@ function ModerateTab({ state, onSetThreadHidden, onSetReplyHidden, onPostReply, 
         </tbody>
       </table>
     </div>
+    </div>
+  )
+}
+
+function QueueCard({ title, count, tone, hint, children }) {
+  return (
+    <div style={{ background: 'white', border: `1px solid ${BD}`, borderRadius: 14, overflow: 'hidden', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: INK }}>{title}</span>
+        <StatusBadge tone={tone}>{count}</StatusBadge>
+        <span style={{ fontSize: 12, color: T3 }}>{hint}</span>
+      </div>
+      {children}
+    </div>
   )
 }
 
@@ -353,6 +423,7 @@ function ModerateTab({ state, onSetThreadHidden, onSetReplyHidden, onPostReply, 
 // Exam Room — the admin-approval step that actually turns on their posting rights (Phase 1).
 function ContributorsTab({ state, onApproveContributor }) {
   const { contributors = {}, repliesByThread } = state
+  const inactivityDays = state.inactivityDays || 30
   const nameByKey = {}
   for (const list of Object.values(repliesByThread)) {
     for (const r of list) if (!nameByKey[r.studentKey]) nameByKey[r.studentKey] = r.authorName
@@ -366,7 +437,7 @@ function ContributorsTab({ state, onApproveContributor }) {
   return (
     <div>
       <div style={{ fontSize: 13, color: T2, marginBottom: 16, lineHeight: 1.55, maxWidth: 760 }}>
-        A student becomes an Active Contributor at 10 NPrep-liked comments, and Eligible to post at 15 — like a comment from the Moderate tab to count it. Eligibility alone doesn't grant posting; approve them below to actually turn it on for Subject Room / Exam Room.
+        A student becomes an Active Contributor at 10 NPrep-liked comments, and Eligible to post at 15 — like a comment from the Moderate tab to count it. Eligibility alone doesn't grant posting; approve them below to turn it on for Subject Room / Exam Room. Every post they write still waits for your approval in the Moderate tab. After {inactivityDays} days with no comment or post, the badge pauses and posting rights are removed — a new comment brings the badge back, and you approve posting again.
       </div>
       {rows.length === 0 ? (
         <div style={{ background: 'white', border: `1px solid ${BD}`, borderRadius: 14, padding: '36px 20px', textAlign: 'center', fontSize: 13, color: T3 }}>
@@ -379,6 +450,7 @@ function ContributorsTab({ state, onApproveContributor }) {
               <tr>
                 <th>Student</th>
                 <th>NPrep-liked comments</th>
+                <th>Last active</th>
                 <th>Status</th>
                 <th style={{ textAlign: 'right' }}>Action</th>
               </tr>
@@ -402,8 +474,19 @@ function ContributorsTab({ state, onApproveContributor }) {
                         <span style={{ fontSize: 12, color: T2, whiteSpace: 'nowrap' }}>{row.nprepLikedCount} comment{row.nprepLikedCount === 1 ? '' : 's'} liked by NPrep Team</span>
                       </div>
                     </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {row.lastActiveAt ? (
+                        <>
+                          <div style={{ fontSize: 12.5, color: T1 }}>{timeAgo(row.lastActiveAt)}</div>
+                          <div style={{ fontSize: 11, color: row.inactive ? R : T3 }}>
+                            {row.inactive ? 'Inactive — badge paused' : `Badge pauses in ${Math.max(0, Math.ceil((new Date(row.expiresAt) - Date.now()) / 86400000))}d`}
+                          </div>
+                        </>
+                      ) : <span style={{ fontSize: 12, color: T3 }}>—</span>}
+                    </td>
                     <td>
                       {row.approvedToPost ? <StatusBadge tone="green">Approved</StatusBadge>
+                        : row.inactive ? <StatusBadge tone="red">{row.expiredAt ? 'Posting rights expired' : 'Inactive'}</StatusBadge>
                         : row.isEligible ? <StatusBadge tone="amber">Approval pending</StatusBadge>
                         : <StatusBadge tone="grey">Below threshold</StatusBadge>}
                     </td>
@@ -414,7 +497,7 @@ function ContributorsTab({ state, onApproveContributor }) {
                           {row.approvedToPost ? 'Approved ✓ — revoke' : 'Approve to post'}
                         </button>
                       ) : (
-                        <span style={{ fontSize: 11.5, color: T3 }}>{15 - row.nprepLikedCount} more to become eligible</span>
+                        <span style={{ fontSize: 11.5, color: T3 }}>{row.inactive ? 'Needs new activity first' : `${Math.max(0, 15 - row.nprepLikedCount)} more to become eligible`}</span>
                       )}
                     </td>
                   </tr>
@@ -428,6 +511,7 @@ function ContributorsTab({ state, onApproveContributor }) {
   )
 }
 
+const queueRow = { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '14px 20px', borderTop: `1px solid ${BD}` }
 const sel = { width: '100%', border: `1.5px solid ${BD}`, borderRadius: 10, padding: '10px 12px', fontSize: 13.5, color: T1, background: 'white' }
 const inp = { width: '100%', border: `1.5px solid ${BD}`, borderRadius: 10, padding: '10px 12px', fontSize: 13.5, color: T1, background: 'white' }
 const smBtn = { fontSize: 12, fontWeight: 600, padding: '7px 13px', borderRadius: 8, border: `1px solid ${BD}`, background: 'white', color: T2, cursor: 'pointer', whiteSpace: 'nowrap' }

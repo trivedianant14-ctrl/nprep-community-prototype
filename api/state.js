@@ -1,12 +1,22 @@
 import { sql } from './_lib/db.js'
 import { serializeThread, serializeReply } from './_lib/serialize.js'
-import { ROOMS, ROOM_TILES, EXAMS, SUBJECT_TAGS, DEMO_STUDENT_KEY, NPREP_TEAM_KEY, ACTIVE_CONTRIBUTOR_THRESHOLD, ELIGIBLE_TO_POST_THRESHOLD } from './_lib/constants.js'
+import { buildRooms, buildRoomTiles, examRoomKey, SUBJECT_TAGS, REPORT_REASONS, DEMO_STUDENT_KEY, NPREP_TEAM_KEY, ACTIVE_CONTRIBUTOR_THRESHOLD, ELIGIBLE_TO_POST_THRESHOLD, CONTRIBUTOR_INACTIVITY_DAYS } from './_lib/constants.js'
+import { getExams } from './_lib/exams.js'
+import { expireInactiveContributors } from './_lib/contributors.js'
+
+const DAY_MS = 24 * 60 * 60 * 1000
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
   const db = sql()
 
-  const [profileRows, enrollmentRows, threads, replies, polls, pollOptions, pollVotes, notifications, questions, threadLikes, replyLikes, contributorRows, registrations] = await Promise.all([
+  // Lazy contributor expiry (no cron in the prototype) — runs first so everything below
+  // already reflects revoked posting rights.
+  await expireInactiveContributors(db)
+
+  const [exams, reportRows, profileRows, enrollmentRows, threads, replies, polls, pollOptions, pollVotes, notifications, questions, threadLikes, replyLikes, contributorRows, registrations] = await Promise.all([
+    getExams(db),
+    db`SELECT reply_id, student_key, reason FROM reply_reports WHERE status = 'open'`.catch(() => []),
     db`SELECT exam, onboarded FROM profiles WHERE student_key = ${DEMO_STUDENT_KEY}`,
     db`SELECT room_key FROM enrollments WHERE student_key = ${DEMO_STUDENT_KEY}`,
     db`SELECT * FROM threads ORDER BY created_at DESC`,
@@ -18,7 +28,7 @@ export default async function handler(req, res) {
     db`SELECT * FROM questions ORDER BY id`,
     db`SELECT thread_id, student_key FROM thread_likes`,
     db`SELECT reply_id, student_key FROM reply_likes`,
-    db`SELECT student_key, approved_to_post FROM contributors`,
+    db`SELECT student_key, approved_to_post, approved_at, expired_at FROM contributors`.catch(() => db`SELECT student_key, approved_to_post, approved_at FROM contributors`),
     db`SELECT thread_id, student_key FROM webinar_registrations`,
   ])
 
@@ -47,22 +57,55 @@ export default async function handler(req, res) {
   // Contributor tiers — how many of a student's own (non-hidden) comments NPrep Team has
   // liked, badge tiers at 10/15, and whether an admin has actually turned posting on.
   const approvedByKey = {}
-  for (const c of contributorRows) approvedByKey[c.student_key] = c.approved_to_post
+  const expiredAtByKey = {}
+  for (const c of contributorRows) {
+    approvedByKey[c.student_key] = c.approved_to_post
+    if (c.expired_at) expiredAtByKey[c.student_key] = c.expired_at
+  }
   const authorNprepCounts = {}
   for (const r of replies) {
     if (r.hidden) continue
     if (nprepLikedReplyIds.has(r.id)) authorNprepCounts[r.student_key] = (authorNprepCounts[r.student_key] || 0) + 1
   }
+
+  // Last activity = latest comment, authored post, or admin approval. No activity for
+  // CONTRIBUTOR_INACTIVITY_DAYS switches the badge tier off (posting rights are revoked
+  // separately in expireInactiveContributors). A new comment brings the badge back, but
+  // posting rights need a fresh admin approval.
+  const lastActiveMs = {}
+  const bump = (key, iso) => {
+    const ms = iso ? new Date(iso).getTime() : 0
+    if (key && ms > (lastActiveMs[key] || 0)) lastActiveMs[key] = ms
+  }
+  for (const r of replies) bump(r.student_key, r.created_at)
+  for (const t of threads) bump(t.author_key, t.created_at)
+  for (const c of contributorRows) bump(c.student_key, c.approved_at)
+
   const contributorKeys = new Set([...Object.keys(authorNprepCounts), ...Object.keys(approvedByKey)])
   const contributorsOut = {}
+  const nowMs = Date.now()
   for (const key of contributorKeys) {
     const nprepLikedCount = authorNprepCounts[key] || 0
+    const last = lastActiveMs[key] || 0
+    const inactive = last > 0 && nowMs - last > CONTRIBUTOR_INACTIVITY_DAYS * DAY_MS
     contributorsOut[key] = {
       nprepLikedCount,
-      isActiveContributor: nprepLikedCount >= ACTIVE_CONTRIBUTOR_THRESHOLD,
-      isEligible: nprepLikedCount >= ELIGIBLE_TO_POST_THRESHOLD,
-      approvedToPost: !!approvedByKey[key],
+      isActiveContributor: !inactive && nprepLikedCount >= ACTIVE_CONTRIBUTOR_THRESHOLD,
+      isEligible: !inactive && nprepLikedCount >= ELIGIBLE_TO_POST_THRESHOLD,
+      approvedToPost: !inactive && !!approvedByKey[key],
+      inactive,
+      lastActiveAt: last ? new Date(last).toISOString() : null,
+      expiresAt: last ? new Date(last + CONTRIBUTOR_INACTIVITY_DAYS * DAY_MS).toISOString() : null,
+      expiredAt: expiredAtByKey[key] || null,
     }
+  }
+
+  // Open (not dismissed) comment reports, grouped per comment for the CMS queue.
+  const reportsByReply = {}
+  const myReportedReplyIds = new Set()
+  for (const rp of reportRows) {
+    (reportsByReply[rp.reply_id] ??= []).push(rp)
+    if (rp.student_key === DEMO_STUDENT_KEY) myReportedReplyIds.add(rp.reply_id)
   }
 
   const registrationCounts = {}
@@ -101,14 +144,17 @@ export default async function handler(req, res) {
     repliesOut[threadId] = list.map(r => {
       const parent = r.parent_reply_id ? repliesById[r.parent_reply_id] : null
       const replyingToName = parent && !parent.hidden ? parent.author_name : null
-      return serializeReply(r, replyLikeCounts[r.id] || 0, myReplyLikes.has(r.id), replyingToName, nprepLikedReplyIds.has(r.id))
+      return serializeReply(r, replyLikeCounts[r.id] || 0, myReplyLikes.has(r.id), replyingToName, nprepLikedReplyIds.has(r.id), reportsByReply[r.id] || [], myReportedReplyIds.has(r.id))
     })
   }
 
   res.status(200).json({
-    rooms: ROOMS,
-    roomTiles: ROOM_TILES,
-    exams: EXAMS,
+    rooms: buildRooms(exams),
+    roomTiles: buildRoomTiles(exams),
+    exams,
+    examRoomKeys: Object.fromEntries(exams.map(e => [e, examRoomKey(e)])),
+    reportReasons: REPORT_REASONS,
+    inactivityDays: CONTRIBUTOR_INACTIVITY_DAYS,
     subjectTags: SUBJECT_TAGS,
     profile: { exam: profileRows[0]?.exam || null, onboarded: profileRows[0]?.onboarded || false },
     enrolledRoomKeys: enrollmentRows.map(e => e.room_key),

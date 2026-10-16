@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { StatusBar, BackIcon, T1, T2, T3, BD, BG2, PL, PB, PD, P, G, GL, INK, ROOM_GRADIENT, roomKindFromKey, RoomIcon, RoomPill, LikeButton, CommentIcon, ShareIcon, shareThread, AttachmentPreview, ResourceLink, LiveBadge, EmptyState, timeAgo, FS } from '../../shared'
+import { StatusBar, BackIcon, T1, T2, T3, BD, BG2, PL, PB, PD, P, G, GL, INK, ROOM_GRADIENT, roomKindFromKey, RoomIcon, RoomPill, LikeButton, CommentIcon, ShareIcon, shareThread, AttachmentPreview, ResourceLink, LiveBadge, EmptyState, TagPill, isVisibleToStudent, examRoomKeyFor, timeAgo, FS } from '../../shared'
 
-function isEnrolled(tile, enrolledRoomKeys, exam) {
-  if (tile.kind === 'exam_room') return exam ? enrolledRoomKeys.includes('exam_room_' + exam.toLowerCase()) : false
+function isEnrolled(tile, enrolledRoomKeys, examKey) {
+  if (tile.kind === 'exam_room') return examKey ? enrolledRoomKeys.includes(examKey) : false
   return enrolledRoomKeys.includes(tile.key)
 }
 
-function roomKeysFor(tile, exam) {
-  if (tile.kind === 'exam_room') return exam ? ['exam_room_' + exam.toLowerCase()] : []
+function roomKeysFor(tile, examKey) {
+  if (tile.kind === 'exam_room') return examKey ? [examKey] : []
   return [tile.key]
 }
 
@@ -22,6 +22,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
   const [showNotifs, setShowNotifs] = useState(false)
   const [sharedId, setSharedId] = useState(null) // thread id currently showing "Link copied"
   const { roomTiles, profile, enrolledRoomKeys, exams, notifications, threads, rooms } = state
+  const examKey = examRoomKeyFor(state, profile.exam)
 
   const share = async (t) => {
     const result = await shareThread(t)
@@ -32,15 +33,15 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
   }
 
   const threadsFor = (tile) => {
-    const keys = roomKeysFor(tile, profile.exam)
-    return threads.filter(t => keys.includes(t.roomKey) && !t.hidden).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    const keys = roomKeysFor(tile, examKey)
+    return threads.filter(t => keys.includes(t.roomKey) && isVisibleToStudent(t)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   }
 
   // Reddit-home-style mixed feed — recent posts from every room interleaved, so a student
   // can see (and like, and join on the spot) what's happening across the whole community
   // without visiting each room one at a time.
   const feedPosts = threads
-    .filter(t => !t.hidden && !t.archived)
+    .filter(t => isVisibleToStudent(t) && !t.archived)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 8)
 
@@ -86,8 +87,8 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
         <div style={sectionLabel}>Rooms</div>
         <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {roomTiles.map(tile => {
-            const joined = isEnrolled(tile, enrolledRoomKeys, profile.exam)
-            const roomKeys = roomKeysFor(tile, profile.exam)
+            const joined = isEnrolled(tile, enrolledRoomKeys, examKey)
+            const roomKeys = roomKeysFor(tile, examKey)
             const list = threadsFor(tile)
             const engagement = list.reduce((sum, t) => sum + t.replyCount, 0)
 
@@ -132,6 +133,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <RoomPill kind={kind} emoji={tile.emoji}>{room ? room.label : tile.label}</RoomPill>
                     {t.isLive && <LiveBadge />}
+                    {t.approvalStatus === 'pending' && <TagPill tone="poll">⏳ Waiting for approval</TagPill>}
                     <span style={{ fontSize: FS.meta, color: T3, marginLeft: 'auto' }}>{timeAgo(t.createdAt)}</span>
                   </div>
                   <div style={{ fontSize: FS.body + 0.5, fontWeight: 700, color: INK, lineHeight: 1.4 }}>{t.title}</div>
@@ -182,7 +184,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
               {notifications.map(n => (
                 <button key={n.id} onClick={() => { setShowNotifs(false); onOpenThreadFromNotification(n.threadId) }} className="row-tap"
                   style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${BD}`, padding: '12px 18px', cursor: 'pointer', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <span style={{ width: 34, height: 34, borderRadius: 10, background: n.kind === 'daily_dose' ? '#FFF3DD' : n.kind === 'reply' ? PL : '#F1EAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>{n.kind === 'daily_dose' ? '🔥' : n.kind === 'reply' ? '💬' : '📣'}</span>
+                  <span style={{ width: 34, height: 34, borderRadius: 10, background: n.kind === 'daily_dose' ? '#FFF3DD' : n.kind === 'reply' ? PL : n.kind === 'post_status' ? GL : '#F1EAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>{n.kind === 'daily_dose' ? '🔥' : n.kind === 'reply' ? '💬' : n.kind === 'post_status' ? '📝' : '📣'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: FS.small + 0.5, fontWeight: 700, color: INK }}>{n.title}</div>
                     <div style={{ fontSize: FS.small, color: T2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</div>

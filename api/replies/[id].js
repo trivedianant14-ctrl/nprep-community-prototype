@@ -1,5 +1,5 @@
 import { sql } from '../_lib/db.js'
-import { DEMO_STUDENT_KEY, NPREP_TEAM_KEY } from '../_lib/constants.js'
+import { DEMO_STUDENT_KEY, NPREP_TEAM_KEY, REPORT_REASONS } from '../_lib/constants.js'
 
 // Moderator delete/hide a reply — content is preserved in the DB (not nulled) so
 // un-hiding restores it; serialize.js masks body/authorName whenever hidden=true so the
@@ -29,6 +29,27 @@ export default async function handler(req, res) {
         await db`INSERT INTO reply_likes (reply_id, student_key) VALUES (${id}, ${likerKey}) ON CONFLICT DO NOTHING`
       }
       return res.status(200).json({ liked: !existing })
+    }
+
+    // Student reports someone else's comment — lands in the CMS Moderate queue. A report
+    // that was dismissed earlier can be raised again.
+    if (action === 'report') {
+      const { reason } = req.body || {}
+      if (!reason || !REPORT_REASONS.includes(reason)) return res.status(400).json({ error: 'Pick a reason' })
+      const [reply] = await db`SELECT student_key, hidden FROM replies WHERE id = ${id}`
+      if (!reply || reply.hidden) return res.status(404).json({ error: 'Comment not found' })
+      if (reply.student_key === DEMO_STUDENT_KEY) return res.status(400).json({ error: "You can't report your own comment" })
+      await db`
+        INSERT INTO reply_reports (reply_id, student_key, reason) VALUES (${id}, ${DEMO_STUDENT_KEY}, ${reason})
+        ON CONFLICT (reply_id, student_key) DO UPDATE SET reason = ${reason}, status = 'open', reported_at = now()
+      `
+      return res.status(200).json({ reported: true })
+    }
+
+    // Admin closes the open reports on a comment without removing it.
+    if (action === 'dismiss-reports') {
+      await db`UPDATE reply_reports SET status = 'dismissed' WHERE reply_id = ${id} AND status = 'open'`
+      return res.status(200).json({ ok: true })
     }
 
     if (action === 'pin') {

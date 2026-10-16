@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, Avatar, HeartIcon, RoomPill, roomKindFromKey, ROOM_GRADIENT, CommentIcon, LikeButton, ShareIcon, shareThread, timeAgo, ContributorBadge, contributorTier, NPrepMark, OPBadge, PaperclipIcon, AttachmentPreview, uploadAttachment, ATTACHMENT_ACCEPT, ResourceLink, LiveBadge, TagPill, FS } from '../../shared'
+import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, Avatar, HeartIcon, RoomPill, roomKindFromKey, ROOM_GRADIENT, CommentIcon, LikeButton, ShareIcon, shareThread, timeAgo, ContributorBadge, contributorTier, NPrepMark, OPBadge, PaperclipIcon, AttachmentPreview, uploadAttachment, ATTACHMENT_ACCEPT, ResourceLink, LiveBadge, TagPill, FlagIcon, FS } from '../../shared'
 import ChannelWheel from './ChannelWheel'
 
-export default function ThreadDetail({ state, threadId, onPostReply, onVote, onLikeThread, onLikeReply, onSwitchRoom, onRegisterForWebinar, onBack }) {
+export default function ThreadDetail({ state, threadId, onPostReply, onVote, onLikeThread, onLikeReply, onReportReply, onSwitchRoom, onRegisterForWebinar, onBack }) {
   const [draft, setDraft] = useState('')
   const [shareMsg, setShareMsg] = useState('')
   const [attachment, setAttachment] = useState(null) // { url, name, type } | null — pending media for the next reply
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const [reportTarget, setReportTarget] = useState(null) // reply being reported — opens the reason sheet
+  const [reportMsg, setReportMsg] = useState('')
   const [replyTo, setReplyTo] = useState(null) // { id, authorName } | null — reply target, any depth
   const [sortMode, setSortMode] = useState('relevant') // 'relevant' | 'all' — Facebook-style comment sort
   // Nested replies are collapsed by default (Instagram/Twitter-style "N replies") — a
@@ -137,6 +139,13 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
           </div>
         </div>
 
+        {thread.approvalStatus === 'pending' && (
+          <div style={{ margin: '12px 16px 0 28px', background: '#FFF8E8', border: '1px solid #FFE0AD', borderRadius: 12, padding: '10px 13px', fontSize: FS.small, fontWeight: 600, color: '#8A5300', lineHeight: 1.45 }}>⏳ Waiting for NPrep approval — only you can see this post for now.</div>
+        )}
+        {thread.approvalStatus === 'rejected' && (
+          <div style={{ margin: '12px 16px 0 28px', background: '#FCEBEB', border: '1px solid #F09595', borderRadius: 12, padding: '10px 13px', fontSize: FS.small, fontWeight: 600, color: '#791F1F', lineHeight: 1.45 }}>NPrep didn't approve this post, so other students can't see it.</div>
+        )}
+
         <div style={{ padding: '14px 18px 4px 28px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {thread.body && <div style={{ fontSize: FS.body + 0.5, color: T1, lineHeight: 1.6 }}>{thread.body}</div>}
           <AttachmentPreview url={thread.attachmentUrl} name={thread.attachmentName} type={thread.attachmentType} />
@@ -216,7 +225,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
           {replies.length === 0 && <div style={{ fontSize: FS.small, color: T3, padding: '16px 6px' }}>No comments yet — be the first to jump in.</div>}
           {orderedTopLevel.map(r => (
             <CommentNode key={r.id} reply={r} depth={0} childrenMap={childrenMap} expandedIds={expandedIds} toggleExpand={toggleExpand}
-              onLikeReply={onLikeReply} onReplyTo={reply => setReplyTo({ id: reply.id, authorName: reply.authorName })} contributors={contributors} opKey={thread.authorKey} />
+              onLikeReply={onLikeReply} onReplyTo={reply => setReplyTo({ id: reply.id, authorName: reply.authorName })} onReport={setReportTarget} contributors={contributors} opKey={thread.authorKey} />
           ))}
           {relevantCapped && (
             <button onClick={() => setSortMode('all')}
@@ -226,6 +235,42 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
           )}
         </div>
       </div>
+
+      {reportMsg && (
+        <div style={{ position: 'absolute', left: 16, right: 16, bottom: 76, background: INK, color: 'white', borderRadius: 12, padding: '11px 14px', fontSize: FS.small, fontWeight: 600, textAlign: 'center', zIndex: 20 }}>{reportMsg}</div>
+      )}
+
+      {reportTarget && (
+        <div className="overlay" onClick={() => setReportTarget(null)}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div className="sheet-header">
+              <span style={{ fontSize: FS.heading, fontWeight: 700, color: INK }}>Report this comment</span>
+              <button onClick={() => setReportTarget(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PD, fontSize: FS.small + 1, fontWeight: 600 }}>Close</button>
+            </div>
+            <div style={{ padding: '6px 20px 20px' }}>
+              <div style={{ fontSize: FS.small, color: T2, margin: '4px 0 12px', lineHeight: 1.45 }}>Why are you reporting {reportTarget.authorName}'s comment? NPrep will review it.</div>
+              {(state.reportReasons || []).map(reason => (
+                <button key={reason} className="row-tap"
+                  onClick={async () => {
+                    const target = reportTarget
+                    setReportTarget(null)
+                    try {
+                      await onReportReply(target.id, reason)
+                      setReportMsg('Thanks — NPrep will review this comment.')
+                    } catch (err) {
+                      setReportMsg(err.message || 'Could not send the report')
+                    }
+                    setTimeout(() => setReportMsg(''), 2600)
+                  }}
+                  style={{ width: '100%', textAlign: 'left', background: 'white', border: `1.5px solid ${BD}`, borderRadius: 12, padding: '12px 14px', marginBottom: 8, fontSize: FS.body, fontWeight: 600, color: T1, cursor: 'pointer' }}>
+                  {reason}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {thread.archived ? (
         <div style={{ flexShrink: 0, borderTop: `1px solid ${BD}`, padding: '14px 16px', textAlign: 'center', fontSize: FS.small, color: T3, background: BG2 }}>
@@ -280,7 +325,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
 // Replies-to-a-comment are collapsed by default, Instagram/Twitter-style — except any reply
 // NPrep Team has liked, which shows inline automatically. The rest sit behind a "N replies"
 // link right before the Reply button; tapping it reveals everyone underneath.
-function CommentNode({ reply, depth, childrenMap, expandedIds, toggleExpand, onLikeReply, onReplyTo, contributors, opKey }) {
+function CommentNode({ reply, depth, childrenMap, expandedIds, toggleExpand, onLikeReply, onReplyTo, onReport, contributors, opKey }) {
   const kids = childrenMap[reply.id] || []
   const isExpanded = expandedIds.has(reply.id)
   const nprepKids = kids.filter(k => k.likedByNPrepTeam)
@@ -297,7 +342,7 @@ function CommentNode({ reply, depth, childrenMap, expandedIds, toggleExpand, onL
         </div>
         {visibleKids.length > 0 && (
           <CommentChildren kids={visibleKids} depth={depth} childrenMap={childrenMap} expandedIds={expandedIds} toggleExpand={toggleExpand}
-            onLikeReply={onLikeReply} onReplyTo={onReplyTo} contributors={contributors} opKey={opKey} />
+            onLikeReply={onLikeReply} onReplyTo={onReplyTo} onReport={onReport} contributors={contributors} opKey={opKey} />
         )}
       </div>
     )
@@ -346,25 +391,32 @@ function CommentNode({ reply, depth, childrenMap, expandedIds, toggleExpand, onL
             <button onClick={() => onReplyTo(reply)} className="action-btn" style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: '5px 4px', borderRadius: 8, fontSize: FS.meta, fontWeight: 600, color: T2 }}>
               <CommentIcon size={12} color={T2} /> Reply
             </button>
+            {!isSelf && (reply.reportedByMe ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: FS.meta, fontWeight: 600, color: T3 }}><FlagIcon size={12} color={T3} /> Reported</span>
+            ) : (
+              <button onClick={() => onReport(reply)} className="action-btn" aria-label="Report comment" style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: '5px 4px', borderRadius: 8, fontSize: FS.meta, fontWeight: 600, color: T2 }}>
+                <FlagIcon size={12} color={T2} /> Report
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       {visibleKids.length > 0 && (
         <CommentChildren kids={visibleKids} depth={depth} childrenMap={childrenMap} expandedIds={expandedIds} toggleExpand={toggleExpand}
-          onLikeReply={onLikeReply} onReplyTo={onReplyTo} contributors={contributors} opKey={opKey} />
+          onLikeReply={onLikeReply} onReplyTo={onReplyTo} onReport={onReport} contributors={contributors} opKey={opKey} />
       )}
     </div>
   )
 }
 
-function CommentChildren({ kids, depth, childrenMap, expandedIds, toggleExpand, onLikeReply, onReplyTo, contributors, opKey }) {
+function CommentChildren({ kids, depth, childrenMap, expandedIds, toggleExpand, onLikeReply, onReplyTo, onReport, contributors, opKey }) {
   const indent = depth < 4 ? 26 : 10
   return (
     <div style={{ marginLeft: 13, paddingLeft: indent - 13, borderLeft: `2px solid ${BD}` }}>
       {kids.map(child => (
         <CommentNode key={child.id} reply={child} depth={depth + 1} childrenMap={childrenMap} expandedIds={expandedIds} toggleExpand={toggleExpand}
-          onLikeReply={onLikeReply} onReplyTo={onReplyTo} contributors={contributors} opKey={opKey} />
+          onLikeReply={onLikeReply} onReplyTo={onReplyTo} onReport={onReport} contributors={contributors} opKey={opKey} />
       ))}
     </div>
   )

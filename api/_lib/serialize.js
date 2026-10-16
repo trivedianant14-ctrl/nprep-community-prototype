@@ -9,6 +9,8 @@ export function serializeThread(t, replyCount, poll, likeCount = 0, likedByMe = 
     body: t.body,
     subjectTag: t.subject_tag,
     hidden: t.hidden,
+    // 'approved' | 'pending' | 'rejected' — contributor posts start 'pending' until NPrep approves.
+    approvalStatus: t.approval_status || 'approved',
     createdAt: t.created_at,
     archiveAt: t.archive_at,
     archived: archiveAt ? archiveAt < now : false,
@@ -34,7 +36,7 @@ export function serializeThread(t, replyCount, poll, likeCount = 0, likedByMe = 
   }
 }
 
-export function serializeReply(r, likeCount = 0, likedByMe = false, replyingToName = null, likedByNPrepTeam = false) {
+export function serializeReply(r, likeCount = 0, likedByMe = false, replyingToName = null, likedByNPrepTeam = false, reports = [], reportedByMe = false) {
   return {
     id: r.id,
     threadId: r.thread_id,
@@ -49,6 +51,10 @@ export function serializeReply(r, likeCount = 0, likedByMe = false, replyingToNa
     replyingToName: r.hidden ? null : replyingToName,
     pinned: !!r.pinned_at,
     likedByNPrepTeam: r.hidden ? false : likedByNPrepTeam,
+    // Open (not dismissed) reports, for the CMS queue; reportedByMe stops a student reporting twice.
+    reportCount: reports.length,
+    reportReasons: reports.map(x => x.reason),
+    reportedByMe,
     attachmentUrl: r.hidden ? null : r.attachment_url,
     attachmentName: r.hidden ? null : r.attachment_name,
     attachmentType: r.hidden ? null : r.attachment_type,

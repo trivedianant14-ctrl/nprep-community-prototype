@@ -106,6 +106,23 @@ export function roomKindFromKey(roomKey) {
   return 'subject_room'
 }
 
+// A contributor's post is held until NPrep approves it: students only see 'approved' posts,
+// plus the author sees their own 'pending' one (tagged as waiting). Rejected posts never show.
+export function isVisibleToStudent(t) {
+  if (t.hidden) return false
+  if (!t.approvalStatus || t.approvalStatus === 'approved') return true
+  return t.approvalStatus === 'pending' && t.authorKey === 'demo'
+}
+
+// Exam rooms are keyed by the backend (the exam list is a backend setting).
+export function examRoomKeyFor(state, exam) {
+  return exam ? state.examRoomKeys?.[exam] || null : null
+}
+
+export function FlagIcon({ size = 13, color = T2 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-2 4.5 2 4.5H4"/></svg>
+}
+
 // Tinted rounded-square icon tile for a room — the room's own emoji on its soft accent color.
 export function RoomIcon({ kind, emoji, size = 44 }) {
   return (

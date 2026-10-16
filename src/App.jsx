@@ -62,6 +62,9 @@ export default function App() {
   const nprepLikeReply = async (replyId) => { await api(`/replies/${replyId}`, { method: 'POST', body: { action: 'nprep-like' } }); await refresh() }
   const togglePinReply = async (replyId) => { await api(`/replies/${replyId}`, { method: 'POST', body: { action: 'pin' } }); await refresh() }
   const approveContributor = async (studentKey) => { await api(`/contributors/${studentKey}/approve`, { method: 'POST' }); await refresh() }
+  const reportReply = async (replyId, reason) => { await api(`/replies/${replyId}`, { method: 'POST', body: { action: 'report', reason } }); await refresh() }
+  const dismissReports = async (replyId) => { await api(`/replies/${replyId}`, { method: 'POST', body: { action: 'dismiss-reports' } }); await refresh() }
+  const decideThread = async (id, approval) => { await api(`/threads/${id}`, { method: 'PATCH', body: { approval } }); await refresh() }
   const createPost = async (payload) => { await api('/threads', { method: 'POST', body: { ...payload, asContributor: true } }); await refresh() }
 
   const exitToLanding = () => setTopScreen('landing')
@@ -90,6 +93,7 @@ export default function App() {
             onLikeThread={likeThread}
             onLikeReply={likeReply}
             onCreatePost={createPost}
+            onReportReply={reportReply}
             onRegisterForWebinar={registerForWebinar}
             onExit={exitToLanding}
           />
@@ -106,6 +110,8 @@ export default function App() {
           onNprepLikeReply={nprepLikeReply}
           onTogglePinReply={togglePinReply}
           onApproveContributor={approveContributor}
+          onDismissReports={dismissReports}
+          onDecideThread={decideThread}
           onExit={exitToLanding}
         />
       )}

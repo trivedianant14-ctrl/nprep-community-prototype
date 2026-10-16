@@ -1,5 +1,6 @@
 import { sql } from '../_lib/db.js'
 import { DEMO_STUDENT_KEY, DEMO_STUDENT_NAME, CONTRIBUTOR_POST_ROOM_KINDS } from '../_lib/constants.js'
+import { expireInactiveContributors } from '../_lib/contributors.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -22,16 +23,20 @@ export default async function handler(req, res) {
 
   let authorKey = null
   let authorName = null
+  // Contributor posts are held for NPrep approval; official CMS posts go live straight away.
+  let approvalStatus = 'approved'
   if (asContributor) {
     if (!CONTRIBUTOR_POST_ROOM_KINDS.includes(roomKind(roomKey))) {
       return res.status(403).json({ error: 'Contributors can only post in Subject Room or Exam Room' })
     }
+    await expireInactiveContributors(db)
     const [contributor] = await db`SELECT approved_to_post FROM contributors WHERE student_key = ${DEMO_STUDENT_KEY}`
     if (!contributor?.approved_to_post) {
       return res.status(403).json({ error: 'Not approved to post yet' })
     }
     authorKey = DEMO_STUDENT_KEY
     authorName = DEMO_STUDENT_NAME
+    approvalStatus = 'pending'
   }
 
   // P0 #8 — no manual workaround to attach a paid question to Daily Dose. Server-side
@@ -48,8 +53,8 @@ export default async function handler(req, res) {
   const archiveAt = isWebinar ? new Date(sessionStart + 48 * 60 * 60 * 1000).toISOString() : null
 
   const [thread] = await db`
-    INSERT INTO threads (room_key, title, body, subject_tag, question_id, archive_at, author_key, author_name, attachment_url, attachment_name, attachment_type, starts_at, resource_url, resource_name)
-    VALUES (${roomKey}, ${title.trim()}, ${body || ''}, ${subjectTag || null}, ${questionId || null}, ${archiveAt}, ${authorKey}, ${authorName}, ${attachmentUrl || null}, ${attachmentName || null}, ${attachmentUrl ? attachmentType || null : null}, ${isWebinar && startsAt ? startsAt : null}, ${resourceUrl || null}, ${resourceUrl ? resourceName || null : null})
+    INSERT INTO threads (room_key, title, body, subject_tag, question_id, archive_at, author_key, author_name, attachment_url, attachment_name, attachment_type, starts_at, resource_url, resource_name, approval_status)
+    VALUES (${roomKey}, ${title.trim()}, ${body || ''}, ${subjectTag || null}, ${questionId || null}, ${archiveAt}, ${authorKey}, ${authorName}, ${attachmentUrl || null}, ${attachmentName || null}, ${attachmentUrl ? attachmentType || null : null}, ${isWebinar && startsAt ? startsAt : null}, ${resourceUrl || null}, ${resourceUrl ? resourceName || null : null}, ${approvalStatus})
     RETURNING *
   `
 
@@ -60,8 +65,11 @@ export default async function handler(req, res) {
     }
   }
 
-  // Notification fan-out for the single demo student.
-  if (roomKey === 'daily_dose') {
+  // Notification fan-out for the single demo student. A pending contributor post notifies
+  // nobody yet — the new-thread notification fires when the admin approves it.
+  if (approvalStatus === 'pending') {
+    // held until approval
+  } else if (roomKey === 'daily_dose') {
     const [recent] = await db`
       SELECT id FROM notifications
       WHERE student_key = ${DEMO_STUDENT_KEY} AND kind = 'daily_dose' AND created_at > ${new Date(Date.now() - DAY_MS).toISOString()}
@@ -83,5 +91,5 @@ export default async function handler(req, res) {
     }
   }
 
-  res.status(201).json({ id: thread.id })
+  res.status(201).json({ id: thread.id, approvalStatus })
 }

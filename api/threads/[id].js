@@ -9,8 +9,37 @@ export default async function handler(req, res) {
   const db = sql()
 
   if (req.method === 'PATCH') {
-    const { hidden } = req.body || {}
-    await db`UPDATE threads SET hidden = ${!!hidden} WHERE id = ${id}`
+    const { hidden, approval } = req.body || {}
+
+    // Admin decision on a contributor's post. Only 'pending' posts can be decided; the
+    // author is told either way, and an approved post also notifies students enrolled in
+    // its room (the new-thread notification is held back while a post is pending).
+    if (approval !== undefined) {
+      if (!['approved', 'rejected'].includes(approval)) return res.status(400).json({ error: 'Invalid decision' })
+      const [thread] = await db`UPDATE threads SET approval_status = ${approval} WHERE id = ${id} AND approval_status = 'pending' RETURNING title, room_key, author_key`
+      if (!thread) return res.status(409).json({ error: 'This post is not waiting for approval' })
+
+      if (thread.author_key === DEMO_STUDENT_KEY) {
+        await db`
+          INSERT INTO notifications (student_key, kind, room_key, thread_id, title, body)
+          VALUES (${DEMO_STUDENT_KEY}, 'post_status', ${thread.room_key}, ${id},
+                  ${approval === 'approved' ? 'Your post was approved' : "Your post wasn't approved"}, ${thread.title})
+        `
+      }
+      if (approval === 'approved' && thread.author_key !== DEMO_STUDENT_KEY) {
+        const [enrolled] = await db`SELECT 1 FROM enrollments WHERE student_key = ${DEMO_STUDENT_KEY} AND room_key = ${thread.room_key}`
+        if (enrolled) {
+          await db`
+            INSERT INTO notifications (student_key, kind, room_key, thread_id, title, body)
+            VALUES (${DEMO_STUDENT_KEY}, 'room', ${thread.room_key}, ${id}, 'New thread posted', ${thread.title})
+          `
+        }
+      }
+      return res.status(200).json({ ok: true })
+    }
+
+    // Only touch `hidden` when it was actually sent, so a decision above never un-hides a post.
+    if (hidden !== undefined) await db`UPDATE threads SET hidden = ${!!hidden} WHERE id = ${id}`
     return res.status(200).json({ ok: true })
   }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, G, GL, INK, CommentIcon, LikeButton, ROOM_GRADIENT, ROOM_TINT, RoomIcon, TagPill, ShareIcon, shareThread, AttachmentPreview, ResourceLink, LiveBadge, EmptyState, timeAgo, FS } from '../../shared'
+import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, G, GL, INK, CommentIcon, LikeButton, ROOM_GRADIENT, ROOM_TINT, RoomIcon, TagPill, ShareIcon, shareThread, AttachmentPreview, ResourceLink, LiveBadge, EmptyState, isVisibleToStudent, examRoomKeyFor, timeAgo, FS } from '../../shared'
 import ChannelWheel from './ChannelWheel'
 
 const CONTRIBUTOR_POST_KINDS = ['subject_room', 'exam_room']
@@ -12,6 +12,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
   const [sharedId, setSharedId] = useState(null) // thread id currently showing "Link copied"
   const [search, setSearch] = useState('')
   const [subjectFilter, setSubjectFilter] = useState('all')
+  const [sentNotice, setSentNotice] = useState(false) // contributor just posted — held for approval
 
   const share = async (t) => {
     const result = await shareThread(t)
@@ -21,10 +22,10 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
     }
   }
 
-  const roomKey = tile.kind === 'exam_room' ? (profile.exam ? 'exam_room_' + profile.exam.toLowerCase() : null) : tile.key
+  const roomKey = tile.kind === 'exam_room' ? examRoomKeyFor(state, profile.exam) : tile.key
   const joined = roomKey ? enrolledRoomKeys.includes(roomKey) : false
   const isYtLectures = tile.kind === 'yt_lectures'
-  let list = roomKey ? threads.filter(t => t.roomKey === roomKey && !t.hidden).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : []
+  let list = roomKey ? threads.filter(t => t.roomKey === roomKey && isVisibleToStudent(t)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : []
   if (isYtLectures) {
     if (search.trim()) list = list.filter(t => t.title.toLowerCase().includes(search.trim().toLowerCase()))
     if (subjectFilter !== 'all') list = list.filter(t => t.subjectTag === subjectFilter)
@@ -37,11 +38,14 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
   const roomAcceptsContributorPosts = CONTRIBUTOR_POST_KINDS.includes(tile.kind)
   const canPost = roomAcceptsContributorPosts && roomKey && contributor?.approvedToPost
   const pendingApproval = roomAcceptsContributorPosts && roomKey && contributor?.isEligible && !contributor?.approvedToPost
+  const badgePaused = roomAcceptsContributorPosts && roomKey && contributor?.inactive && contributor?.nprepLikedCount >= 10
 
   const submitPost = async () => {
     if (!postTitle.trim() || !roomKey) return
     await onCreatePost({ roomKey, title: postTitle.trim(), body: postBody.trim() })
     setPostTitle(''); setPostBody(''); setShowCompose(false)
+    setSentNotice(true)
+    setTimeout(() => setSentNotice(false), 5000)
   }
 
   return (
@@ -93,6 +97,20 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
           </div>
         )}
 
+        {badgePaused && (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#FFF8E8', border: '1px solid #FFE0AD', borderRadius: 12, padding: '11px 14px', margin: '14px 16px 0 28px' }}>
+            <span style={{ fontSize: 15, lineHeight: 1.2 }}>⏸️</span>
+            <span style={{ fontSize: FS.small, fontWeight: 600, color: '#8A5300', lineHeight: 1.45 }}>Your Contributor badge is paused after {state.inactivityDays || 30} days with no activity. Comment again to bring it back — posting needs a fresh approval from NPrep.</span>
+          </div>
+        )}
+
+        {sentNotice && (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: GL, border: '1px solid #97C459', borderRadius: 12, padding: '11px 14px', margin: '14px 16px 0 28px' }}>
+            <span style={{ fontSize: 15, lineHeight: 1.2 }}>✅</span>
+            <span style={{ fontSize: FS.small, fontWeight: 600, color: G, lineHeight: 1.45 }}>Sent for approval. Your post will show to other students once NPrep approves it.</span>
+          </div>
+        )}
+
         {pendingApproval && (
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#FFF8E8', border: '1px solid #FFE0AD', borderRadius: 12, padding: '11px 14px', margin: '14px 16px 0 28px' }}>
             <span style={{ fontSize: 15, lineHeight: 1.2 }}>🎖️</span>
@@ -116,6 +134,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
                 {t.subjectTag && <TagPill tone="subject">{t.subjectTag}</TagPill>}
                 {t.poll && <TagPill tone="poll">📊 Poll</TagPill>}
                 {t.isLive && <LiveBadge />}
+                {t.approvalStatus === 'pending' && <TagPill tone="poll">⏳ Waiting for approval</TagPill>}
                 {hot && !t.archived && !t.isLive && <span style={{ fontSize: FS.tag, fontWeight: 700, color: '#B9490A', background: '#FFF0E6', borderRadius: 20, padding: '3px 9px' }}>🔥 Hot</span>}
                 <span style={{ fontSize: FS.meta, color: T3, marginLeft: 'auto' }}>{timeAgo(t.createdAt)}</span>
               </div>
@@ -166,6 +185,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
                 style={{ width: '100%', border: `1.5px solid ${BD}`, borderRadius: 12, padding: '11px 13px', fontSize: FS.body, marginBottom: 10 }} />
               <textarea value={postBody} onChange={e => setPostBody(e.target.value)} placeholder="Add detail (optional)…" rows={4} className="field"
                 style={{ width: '100%', border: `1.5px solid ${BD}`, borderRadius: 12, padding: '11px 13px', fontSize: FS.body, resize: 'vertical' }} />
+              <div style={{ fontSize: FS.meta + 0.5, color: T3, marginTop: 10, lineHeight: 1.45 }}>NPrep reviews every post before other students can see it.</div>
               <button onClick={submitPost} disabled={!postTitle.trim()}
                 style={{ marginTop: 14, width: '100%', background: postTitle.trim() ? grad : BD, color: postTitle.trim() ? 'white' : T3, border: 'none', borderRadius: 12, padding: '13px', fontSize: FS.body + 0.5, fontWeight: 700, cursor: postTitle.trim() ? 'pointer' : 'default' }}>
                 Post

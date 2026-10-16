@@ -1,5 +1,5 @@
 import { sql } from './_lib/db.js'
-import { DEMO_STUDENT_KEY } from './_lib/constants.js'
+import { DEMO_STUDENT_KEY, examRoomKey } from './_lib/constants.js'
 
 // PRD P0 #5 — fires once on the student's first Community tab open: auto-enrolls Daily
 // Dose (always) and the Exam Room matching their profile (if an exam is already set).
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   if (!row.onboarded) {
     await db`INSERT INTO enrollments (student_key, room_key) VALUES (${DEMO_STUDENT_KEY}, 'daily_dose') ON CONFLICT DO NOTHING`
     if (row.exam) {
-      await db`INSERT INTO enrollments (student_key, room_key) VALUES (${DEMO_STUDENT_KEY}, ${'exam_room_' + row.exam.toLowerCase()}) ON CONFLICT DO NOTHING`
+      await db`INSERT INTO enrollments (student_key, room_key) VALUES (${DEMO_STUDENT_KEY}, ${examRoomKey(row.exam)}) ON CONFLICT DO NOTHING`
     }
     await db`UPDATE profiles SET onboarded = true WHERE student_key = ${DEMO_STUDENT_KEY}`
   }
