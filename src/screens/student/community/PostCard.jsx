@@ -1,4 +1,4 @@
-import { T1, T2, T3, BD, BG2, PL, PB, PD, INK, Avatar, RoomPill, TagPill, LikeButton, CommentIcon, ShareIcon, ContributorBadge, contributorTier, AttachmentPreview, ResourceLink, LiveBadge, VerifiedIcon, timeAgo, FS } from '../../shared'
+import { T1, T2, T3, BD, BG2, PL, PB, PD, INK, Avatar, RoomPill, TagPill, LikeButton, CommentIcon, ShareIcon, ContributorBadge, contributorTier, AttachmentPreview, ResourceLink, LiveBadge, VerifiedIcon, JoinButton, timeAgo, FS } from '../../shared'
 
 // Feed card — the shared post unit for the Community feed and every room list. Layout follows
 // the card feeds in Nextdoor / Lex / Reddit: author row on top, bold title, clamped body,
@@ -67,10 +67,7 @@ export default function PostCard({ t, tile, roomLabel, showRoom = true, contribu
             {t.registeredByMe ? 'Registered ✓' : 'Register'}
           </button>
         ) : !joined && onJoin ? (
-          <button onClick={e => { e.stopPropagation(); onJoin() }} className="pill-btn"
-            style={{ marginLeft: 'auto', fontSize: 11.5, fontWeight: 700, color: PD, background: PL, border: `1px solid ${PB}`, borderRadius: 20, padding: '5px 14px', cursor: 'pointer' }}>
-            Join room
-          </button>
+          <span style={{ marginLeft: 'auto' }}><JoinButton joined={false} onToggle={onJoin} size="sm" /></span>
         ) : null}
       </div>
     </div>

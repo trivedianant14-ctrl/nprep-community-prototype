@@ -435,3 +435,38 @@ export function EmptyState({ icon, title, children }) {
     </div>
   )
 }
+
+// Join / Joined — the official NPrep pill treatment. Not joined: navy filled pill with a plus (same
+// family as "Join Now" / "Answer Now"). Joined: soft azure pill with a check badge, azure text and a
+// light blue border. Sizes: lg (full-width hero), md, sm, xs (inside tappable cards, as a span).
+const JOIN_SIZES = {
+  lg: { h: 46, fs: 14, px: 22, r: 23, ic: 20, gap: 9 },
+  md: { h: 36, fs: 12.5, px: 18, r: 18, ic: 16, gap: 7 },
+  sm: { h: 30, fs: 11.5, px: 14, r: 15, ic: 15, gap: 6 },
+  xs: { h: 24, fs: 10.5, px: 10, r: 12, ic: 13, gap: 4 },
+}
+export function JoinButton({ joined, onToggle, size = 'md', label = 'Join room', joinedLabel = 'Joined', as = 'button' }) {
+  const z = JOIN_SIZES[size]
+  const Tag = as
+  const style = {
+    height: z.h, padding: `0 ${z.px}px`, borderRadius: z.r, fontSize: z.fs, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0,
+    width: size === 'lg' ? '100%' : undefined, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: z.gap, cursor: 'pointer',
+    transition: 'background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s',
+    ...(joined
+      ? { background: '#EAF6FF', color: AZ, border: '1.5px solid #BFE0FF', boxShadow: 'none' }
+      : { background: NAVY, color: '#fff', border: '1.5px solid transparent', boxShadow: size === 'lg' ? '0 8px 18px rgba(19,27,99,0.28)' : size === 'xs' ? 'none' : '0 4px 10px rgba(19,27,99,0.22)' }),
+  }
+  const icon = joined ? (
+    <span key="on" className="pop-in" style={{ width: z.ic, height: z.ic, borderRadius: '50%', background: AZ, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <svg width={z.ic * 0.6} height={z.ic * 0.6} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="4,12.5 10,18 20,6.5" /></svg>
+    </span>
+  ) : (
+    <svg key="off" width={z.ic - 3} height={z.ic - 3} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round"><line x1="12" y1="4.5" x2="12" y2="19.5" /><line x1="4.5" y1="12" x2="19.5" y2="12" /></svg>
+  )
+  const props = as === 'button' ? { onClick: e => { e.stopPropagation(); onToggle?.() }, 'aria-pressed': !!joined } : {}
+  return (
+    <Tag {...props} className="pill-btn pop-on" data-on={!!joined} style={style}>
+      {icon}{joined ? joinedLabel : label}
+    </Tag>
+  )
+}

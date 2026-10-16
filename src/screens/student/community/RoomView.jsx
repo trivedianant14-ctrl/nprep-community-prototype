@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { BackHeader, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, NAVY, AZ, G, GL, INK, ROOM_GRADIENT, ROOM_TINT, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, FS } from '../../shared'
+import { useState } from 'react'
+import { BackHeader, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, NAVY, AZ, G, GL, INK, ROOM_GRADIENT, ROOM_TINT, RoomIcon, JoinButton, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, FS } from '../../shared'
 import PostCard from './PostCard'
 
 const CONTRIBUTOR_POST_KINDS = ['subject_room', 'exam_room']
@@ -19,9 +19,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
   const [subjectFilter, setSubjectFilter] = useState('all')
   const [tab, setTab] = useState('recent') // 'recent' | 'top'
   const [sentNotice, setSentNotice] = useState(false) // contributor just posted — held for approval
-  const activeChip = useRef(null)
-  // Keep the current room's chip centered when hopping between rooms.
-  useEffect(() => { activeChip.current?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }) }, [tile.key])
+  const [explore, setExplore] = useState(false) // "Explore other channels" picker
 
   const share = async (t) => {
     const result = await shareThread(t)
@@ -76,25 +74,26 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
             {allInRoom.length} post{allInRoom.length === 1 ? '' : 's'} · {tile.cadence}
           </div>
           {roomKey && (
-            <button onClick={() => onSetRoomJoined(roomKey, !joined)} className="pill-btn pop-on" data-on={joined}
-              style={{ width: '100%', marginTop: 12, fontSize: FS.body + 0.5, fontWeight: 700, padding: '12px', borderRadius: 14, cursor: 'pointer', border: joined ? `1.5px solid ${BD}` : 'none', background: joined ? 'white' : grad, color: joined ? T2 : 'white' }}>
-              {joined ? 'Joined ✓' : 'Join room'}
-            </button>
+            <div style={{ marginTop: 12 }}>
+              <JoinButton joined={joined} onToggle={() => onSetRoomJoined(roomKey, !joined)} size="lg" />
+            </div>
           )}
         </div>
 
-        {/* Tabs + room switcher stay pinned under the header */}
+        {/* Explore-channels button + tabs stay pinned under the header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 5, background: 'white', borderBottom: `1px solid ${BD}` }}>
-          <div className="scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '10px 12px 4px' }}>
-            {roomTiles.map(rt => {
-              const on = rt.key === tile.key
-              return (
-                <button key={rt.key} ref={on ? activeChip : null} onClick={() => !on && onSwitchRoom(rt)} className="pill-btn pop-on" data-on={on} aria-label={`Open ${rt.label}`}
-                  style={{ flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: FS.small, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: on ? 'default' : 'pointer', border: `1.5px solid ${on ? AZ : '#E4F0FF'}`, background: on ? '#EAF6FF' : '#F0F7FF', color: on ? AZ : T2 }}>
-                  <span style={{ fontSize: 12 }}>{rt.emoji}</span>{rt.label}
-                </button>
-              )
-            })}
+          <div style={{ padding: '10px 12px 8px' }}>
+            <button onClick={() => setExplore(true)} className="pill-btn" aria-label="Explore other channels"
+              style={{ width: '100%', height: 42, display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px 0 14px', borderRadius: 14, background: '#F0F7FF', border: '1.5px solid #E4F0FF', color: INK, textAlign: 'left' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={AZ} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M15.6 8.4l-2 5.2-5.2 2 2-5.2z" /></svg>
+              <span style={{ flex: 1, fontSize: FS.body, fontWeight: 600, color: AZ }}>Explore other channels</span>
+              <span style={{ display: 'flex' }}>
+                {roomTiles.filter(rt => rt.key !== tile.key).slice(0, 3).map((rt, i) => (
+                  <span key={rt.key} style={{ width: 22, height: 22, borderRadius: '50%', background: '#fff', border: '1.5px solid #E4F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, marginLeft: i ? -7 : 0 }}>{rt.emoji}</span>
+                ))}
+              </span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={AZ} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="9,18 15,12 9,6" /></svg>
+            </button>
           </div>
           <div style={{ display: 'flex', position: 'relative' }}>
             {[['recent', 'Recent'], ['top', 'Top']].map(([id, label]) => (
@@ -186,6 +185,40 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
           style={{ position: 'absolute', right: 18, bottom: 18, height: 52, padding: '0 20px 0 16px', borderRadius: 26, background: grad, color: 'white', border: 'none', boxShadow: '0 4px 14px rgba(11,18,48,0.25)', fontSize: FS.body + 0.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 24, lineHeight: 1, fontWeight: 500 }}>+</span> Post
         </button>
+      )}
+
+      {explore && (
+        <div className="overlay" onClick={() => setExplore(false)}>
+          <div className="sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: '82%' }}>
+            <div className="sheet-handle" />
+            <div className="sheet-header">
+              <div>
+                <div style={{ fontSize: FS.heading, fontWeight: 700, color: INK }}>Explore other channels</div>
+                <div style={{ fontSize: FS.small, color: T3, marginTop: 2 }}>Jump to any channel, or join a new one</div>
+              </div>
+              <button onClick={() => setExplore(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PD, fontSize: FS.small + 1, fontWeight: 600 }}>Close</button>
+            </div>
+            <div className="scroll" style={{ overflowY: 'auto', padding: '8px 16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {roomTiles.map((rt, i) => {
+                const here = rt.key === tile.key
+                const k = rt.kind === 'exam_room' ? examRoomKeyFor(state, profile.exam) : rt.key
+                const isJoined = k ? enrolledRoomKeys.includes(k) : false
+                return (
+                  <div key={rt.key} className="stagger" style={{ '--i': i, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 16, background: here ? '#EAF6FF' : '#fff', border: `1.5px solid ${here ? AZ : BD}` }}>
+                    <button onClick={() => { setExplore(false); if (!here) onSwitchRoom(rt) }} className="row-tap" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', textAlign: 'left', padding: 0 }}>
+                      <RoomIcon kind={rt.kind} emoji={rt.emoji} size={40} />
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: 'block', fontSize: FS.body, fontWeight: 600, color: here ? AZ : INK }}>{rt.label}{here ? ' · You are here' : ''}</span>
+                        <span style={{ display: 'block', fontSize: FS.meta, color: T3, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rt.purpose}</span>
+                      </span>
+                    </button>
+                    {k && <JoinButton joined={isJoined} onToggle={() => onSetRoomJoined(k, !isJoined)} size="sm" label="Join" />}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
       )}
 
       {showCompose && (

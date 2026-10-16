@@ -70,7 +70,6 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             onOpenThreadInRoom={openThreadInRoom}
             onLikeThread={onLikeThread}
             onRegisterForWebinar={onRegisterForWebinar}
-            onOpenThreadFromNotification={openThread}
             onBack={goHome}
           />
         )}

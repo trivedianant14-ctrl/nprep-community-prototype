@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { StatusBar, BackIcon, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, P, AZ, G, GL, INK, roomKindFromKey, RoomIcon, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, timeAgo, FS } from '../../shared'
+import { StatusBar, BackIcon, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, P, AZ, G, GL, INK, roomKindFromKey, RoomIcon, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, JoinButton, FS } from '../../shared'
 import PostCard from './PostCard'
 
 const FEED_BG = '#F2F8FF'
@@ -25,14 +25,12 @@ const sectionTitle = { fontSize: FS.heading, fontWeight: 800, color: INK }
 // Community home. Patterns borrowed from the Mobbin references: a horizontal strip of your
 // groups (Reddit "Active in these communities", Nextdoor "Groups"), filter chips over a single
 // mixed feed (Lex, Numo), and white post cards on a soft grey ground (Nextdoor, Lex).
-export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpenTile, onOpenThreadInRoom, onLikeThread, onRegisterForWebinar, onOpenThreadFromNotification, onBack }) {
-  const [showNotifs, setShowNotifs] = useState(false)
+export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpenTile, onOpenThreadInRoom, onLikeThread, onRegisterForWebinar, onBack }) {
   const [sharedId, setSharedId] = useState(null) // thread id currently showing "Link copied"
   const [filter, setFilter] = useState('all') // 'all' | room tile key
   const [searching, setSearching] = useState(false)
   const [query, setQuery] = useState('')
-  const [ringing, setRinging] = useState(false) // bell rings when tapped
-  const { roomTiles, profile, enrolledRoomKeys, exams, notifications, threads, rooms, contributors = {} } = state
+  const { roomTiles, profile, enrolledRoomKeys, exams, threads, rooms, contributors = {} } = state
   const examKey = examRoomKeyFor(state, profile.exam)
 
   const share = async (t) => {
@@ -66,10 +64,6 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
         <span style={{ fontSize: 20, fontWeight: 700, color: INK, flex: 1, letterSpacing: '-0.01em' }}>Community</span>
         <button key={searching ? 'search-on' : 'search-off'} onClick={() => { setSearching(s => !s); setQuery('') }} className={`icon-btn${searching ? ' search-open' : ''}`} aria-label="Search posts" style={{ ...roundBtn, color: searching ? AZ : T1 }}>
           <SearchIcon size={21} />
-        </button>
-        <button onClick={() => { setRinging(true); setTimeout(() => setRinging(false), 750); setShowNotifs(true) }} className={`icon-btn${ringing ? ' bell-ring' : ''}`} aria-label="Notifications" style={{ ...roundBtn, position: 'relative' }}>
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-          {notifications.length > 0 && <span className="dot-pulse" style={{ position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: '50%', background: '#E5385A', border: '1.5px solid white' }} />}
         </button>
       </div>
 
@@ -115,11 +109,9 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
                       <span style={{ fontSize: FS.body, fontWeight: 700, color: INK }}>{tile.label}</span>
                       <span style={{ fontSize: FS.meta, color: T3 }}>{tile.cadence}</span>
                     </span>
-                    {joined
-                      ? <span style={{ fontSize: 10.5, fontWeight: 700, color: G, background: GL, borderRadius: 20, padding: '3px 10px', alignSelf: 'flex-start' }}>Joined ✓</span>
-                      : hasRoom
-                        ? <span style={{ fontSize: 10.5, fontWeight: 700, color: PD, background: PL, border: `1px solid ${PB}`, borderRadius: 20, padding: '2px 10px', alignSelf: 'flex-start' }}>+ Join</span>
-                        : <span style={{ fontSize: 10.5, fontWeight: 700, color: T3, background: BG2, borderRadius: 20, padding: '3px 10px', alignSelf: 'flex-start' }}>Pick exam</span>}
+                    {hasRoom
+                      ? <span style={{ alignSelf: 'flex-start' }}><JoinButton as="span" joined={joined} size="xs" label="Join" /></span>
+                      : <span style={{ fontSize: 10.5, fontWeight: 700, color: T3, background: BG2, borderRadius: 20, padding: '3px 10px', alignSelf: 'flex-start' }}>Pick exam</span>}
                   </button>
                 )
               })}
@@ -168,32 +160,6 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
         </div>
         <div style={{ height: 16 }} />
       </div>
-
-      {showNotifs && (
-        <div className="overlay" onClick={() => setShowNotifs(false)}>
-          <div className="sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: '70%' }}>
-            <div className="sheet-handle" />
-            <div className="sheet-header">
-              <span style={{ fontSize: FS.heading, fontWeight: 700, color: INK }}>Notifications</span>
-              <button onClick={() => setShowNotifs(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PD, fontSize: FS.small + 1, fontWeight: 600 }}>Close</button>
-            </div>
-            <div className="scroll" style={{ overflowY: 'auto', padding: '4px 0' }}>
-              {notifications.length === 0 && <EmptyState icon="🔔" title="No notifications">No notifications yet.</EmptyState>}
-              {notifications.map((n, i) => (
-                <button key={n.id} onClick={() => { setShowNotifs(false); onOpenThreadFromNotification(n.threadId) }} className="row-tap stagger"
-                  style={{ '--i': Math.min(i, 8), width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${BD}`, padding: '12px 18px', cursor: 'pointer', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <span style={{ width: 34, height: 34, borderRadius: 10, background: n.kind === 'daily_dose' ? '#FFF3DD' : n.kind === 'reply' ? PL : n.kind === 'post_status' ? GL : '#F1EAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>{n.kind === 'daily_dose' ? '🔥' : n.kind === 'reply' ? '💬' : n.kind === 'post_status' ? '📝' : '📣'}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: FS.small + 0.5, fontWeight: 700, color: INK }}>{n.title}</div>
-                    <div style={{ fontSize: FS.small, color: T2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.body}</div>
-                  </div>
-                  <span style={{ fontSize: 10.5, color: T3, flexShrink: 0, marginTop: 2 }}>{timeAgo(n.createdAt)}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
