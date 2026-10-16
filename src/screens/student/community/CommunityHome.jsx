@@ -104,7 +104,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
                 return (
                   <button key={tile.key} onClick={() => onOpenTile(tile)} className="room-card stagger"
                     style={{ '--i': i, flex: '0 0 auto', width: 136, textAlign: 'left', background: 'white', border: `1px solid ${BD}`, borderRadius: 16, padding: 12, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 1px 2px rgba(11,18,48,0.05)' }}>
-                    <RoomIcon kind={tile.kind} emoji={tile.emoji} size={40} />
+                    <RoomIcon kind={tile.kind} size={42} />
                     <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                       <span style={{ fontSize: FS.body, fontWeight: 700, color: INK }}>{tile.label}</span>
                       <span style={{ fontSize: FS.meta, color: T3 }}>{tile.cadence}</span>
@@ -138,7 +138,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
           <EmptyState icon="🎯" title="Pick your exam">Choose your exam above to see its Exam Room posts.</EmptyState>
         )}
         {!needsExam && feed.length === 0 && (
-          <EmptyState icon={activeTile?.emoji || '💬'} title={q ? 'No matching posts' : 'Nothing here yet'}>
+          <EmptyState icon={activeTile ? <RoomIcon kind={activeTile.kind} size={40} /> : '💬'} title={q ? 'No matching posts' : 'Nothing here yet'}>
             {q ? 'Try a different word.' : 'No posts in this room yet — check back soon.'}
           </EmptyState>
         )}

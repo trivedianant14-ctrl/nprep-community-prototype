@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { RoomIcon } from './shared'
 
 const MESSAGES = ['Warming up the rooms…', "Fetching today's Daily Dose…", 'Catching up on new posts…', 'Almost there…']
-const ROOM_EMOJIS = ['🔥', '📖', '🎯', '🎥', '📺', '📰', '💼']
+const ROOM_KINDS = ['daily_dose', 'subject_room', 'exam_room', 'webinar_threads', 'yt_lectures', 'recent_updates', 'nursing_jobs']
 
 // Branded splash shown while the first /api/state response is on its way. The logo floats inside
 // two pulsing halos with an orbiting dot, the seven room icons bounce in sequence, and a progress
@@ -29,7 +30,7 @@ export default function LoadingScreen({ error, leaving, onRetry, inline = false,
       <div className="splash-title">NPrep Community</div>
 
       <div className="splash-rooms" aria-hidden="true">
-        {ROOM_EMOJIS.map((e, n) => <span key={e} style={{ '--i': n }}>{e}</span>)}
+        {ROOM_KINDS.map((k, n) => <RoomIcon key={k} kind={k} size={inline ? 30 : 34} className="splash-room" style={{ '--i': n }} />)}
       </div>
 
       {error ? (

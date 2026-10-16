@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BackHeader, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, NAVY, AZ, G, GL, INK, ROOM_GRADIENT, ROOM_TINT, RoomIcon, JoinButton, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, FS } from '../../shared'
+import { BackHeader, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, NAVY, AZ, G, GL, INK, ROOM_GRADIENT, ROOM_TINT, RoomIcon, RoomGlyph, JoinButton, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, FS } from '../../shared'
 import PostCard from './PostCard'
 
 const CONTRIBUTOR_POST_KINDS = ['subject_room', 'exam_room']
@@ -64,7 +64,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
         {/* Room header: icon, name, purpose, members/cadence and one big Join button */}
         <div key={tile.key} className="fade-in" style={{ background: `linear-gradient(180deg, ${ROOM_TINT[tile.kind] || '#E6F2FF'} 0%, #F2F8FF 100%)`, padding: '18px 16px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 18, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, boxShadow: '0 1px 3px rgba(11,18,48,0.08)' }}>{tile.emoji}</div>
+            <RoomIcon kind={tile.kind} size={60} style={{ filter: 'drop-shadow(0 6px 10px rgba(19,27,99,0.18))' }} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 20, fontWeight: 800, color: INK, letterSpacing: '-0.01em' }}>{tile.label}</div>
               <div style={{ fontSize: FS.small, color: T2, marginTop: 3, lineHeight: 1.4 }}>{tile.purpose}</div>
@@ -89,7 +89,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
               <span style={{ flex: 1, fontSize: FS.body, fontWeight: 600, color: AZ }}>Explore other channels</span>
               <span style={{ display: 'flex' }}>
                 {roomTiles.filter(rt => rt.key !== tile.key).slice(0, 3).map((rt, i) => (
-                  <span key={rt.key} style={{ width: 22, height: 22, borderRadius: '50%', background: '#fff', border: '1.5px solid #E4F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, marginLeft: i ? -7 : 0 }}>{rt.emoji}</span>
+                  <span key={rt.key} style={{ width: 22, height: 22, borderRadius: '50%', background: '#fff', border: '1.5px solid #E4F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: i ? -7 : 0 }}><RoomGlyph kind={rt.kind} size={12} /></span>
                 ))}
               </span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={AZ} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="9,18 15,12 9,6" /></svg>
@@ -163,7 +163,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
         <div style={{ height: 12 }} />
 
         {roomKey && list.length === 0 && (
-          <EmptyState icon={tile.emoji}>
+          <EmptyState icon={<RoomIcon kind={tile.kind} size={40} />}>
             {isYtLectures && search.trim() ? 'No lectures match your search.' : hasSubjectFilter && subjectFilter !== 'all' ? 'No posts for this subject yet.' : 'No threads yet in this room.'}
           </EmptyState>
         )}
@@ -206,7 +206,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
                 return (
                   <div key={rt.key} className="stagger" style={{ '--i': i, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 16, background: here ? '#EAF6FF' : '#fff', border: `1.5px solid ${here ? AZ : BD}` }}>
                     <button onClick={() => { setExplore(false); if (!here) onSwitchRoom(rt) }} className="row-tap" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', textAlign: 'left', padding: 0 }}>
-                      <RoomIcon kind={rt.kind} emoji={rt.emoji} size={40} />
+                      <RoomIcon kind={rt.kind} size={42} />
                       <span style={{ flex: 1, minWidth: 0 }}>
                         <span style={{ display: 'block', fontSize: FS.body, fontWeight: 600, color: here ? AZ : INK }}>{rt.label}{here ? ' · You are here' : ''}</span>
                         <span style={{ display: 'block', fontSize: FS.meta, color: T3, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rt.purpose}</span>

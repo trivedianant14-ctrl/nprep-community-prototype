@@ -238,7 +238,7 @@ button.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgb
 .splash-orbit i { position: absolute; top: 0; left: 50%; width: 9px; height: 9px; margin-left: -4.5px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 12px rgba(29, 91, 240, 0.65); }
 .splash-title { font-size: 21px; font-weight: 800; color: var(--text); letter-spacing: -0.01em; animation: fadeUp 0.55s 0.1s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
 .splash-rooms { display: flex; gap: 10px; animation: fadeUp 0.55s 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
-.splash-rooms span { width: 34px; height: 34px; border-radius: 11px; background: #fff; box-shadow: 0 2px 8px rgba(11, 18, 48, 0.09); display: flex; align-items: center; justify-content: center; font-size: 17px; animation: roomBounce 1.5s ease-in-out infinite; animation-delay: calc(var(--i) * 110ms); }
+.splash-room { animation: roomBounce 1.5s ease-in-out infinite; animation-delay: calc(var(--i) * 110ms); filter: drop-shadow(0 3px 5px rgba(19, 27, 99, 0.16)); }
 .splash-bar { width: 190px; height: 5px; border-radius: 3px; background: rgba(29, 91, 240, 0.13); overflow: hidden; margin-top: 4px; }
 .splash-bar span { display: block; height: 100%; width: 42%; border-radius: 3px; background: linear-gradient(90deg, var(--primary), #6FA0FF); animation: barSlide 1.3s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
 .splash-msg { font-size: 13px; color: var(--text2); font-weight: 600; min-height: 18px; animation: msgSwap 1.3s ease both; }
@@ -258,7 +258,6 @@ button.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgb
 
 /* In-phone variant: covers just the app frame (used when opening Community from Home) */
 .splash.inline { position: absolute; z-index: 60; border-radius: inherit; }
-.splash.inline .splash-rooms span { width: 30px; height: 30px; font-size: 15px; }
 
 /* ---------- Tap interactions ---------- */
 * { -webkit-tap-highlight-color: transparent; }

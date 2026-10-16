@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 
 // Official NPrep theme, sampled from the real app designs: navy primary buttons (#131B63), azure
 // accent for links / active states (#008DFF), and a pale blue page (#F2F8FF) with soft blue tints.
@@ -145,20 +145,49 @@ export function FlagIcon({ size = 13, color = T2 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-2 4.5 2 4.5H4"/></svg>
 }
 
-// Tinted rounded-square icon tile for a room — the room's own emoji on its soft accent color.
-export function RoomIcon({ kind, emoji, size = 44 }) {
+// Room icons in the NPrep style: a glossy rounded gradient tile with a white line glyph — the same
+// treatment as the official Lectures / QBank / Mini Test icons — one hue per room.
+const ROOM_ART = {
+  daily_dose: { g: ['#FFD36B', '#F28C05'], d: <path d="M12 2.8c.9 3.3 4.6 5.1 4.6 9.4A4.6 4.6 0 0112 17a4.6 4.6 0 01-4.6-4.8c0-2 .9-3.1 2-4.3.3 1.3 1 2 1.7 2.2C10.9 8 10.9 5.3 12 2.8z" /> },
+  subject_room: { g: ['#6CC0FF', '#1E7CFF'], d: <><path d="M3.5 5.8C6.3 4.7 9.4 5 12 6.8c2.6-1.8 5.7-2.1 8.5-1v12.6c-2.8-1.1-5.9-.8-8.5 1-2.6-1.8-5.7-2.1-8.5-1z" /><path d="M12 6.8v12.6" /></> },
+  exam_room: { g: ['#B39BFF', '#6B4EE6'], d: <><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.6" /><circle cx="12" cy="12" r="1.2" fill="#fff" /></> },
+  webinar_threads: { g: ['#5ED6C6', '#12A594'], d: <><rect x="3" y="6.5" width="13" height="11" rx="2.6" /><path d="M16 10.5l5-3v9l-5-3z" /></> },
+  yt_lectures: { g: ['#FF9EC1', '#E9457E'], d: <><rect x="3" y="4.8" width="18" height="12.6" rx="3.2" /><path d="M10.2 8.8l4.8 2.7-4.8 2.7z" fill="#fff" /><path d="M8 20.8h8" /></> },
+  recent_updates: { g: ['#7E89F0', '#2E3AB0'], d: <><path d="M4 9.8v4.4h3.2l7.3 4.1V5.7L7.2 9.8z" /><path d="M17.4 9.2a3.7 3.7 0 010 5.6" /></> },
+  nursing_jobs: { g: ['#6EDC9A', '#1E9E57'], d: <><rect x="3.5" y="7.5" width="17" height="12" rx="2.6" /><path d="M9 7.5V6a1.6 1.6 0 011.6-1.6h2.8A1.6 1.6 0 0115 6v1.5M3.5 13h17" /></> },
+}
+export function RoomIcon({ kind, size = 44, style, className }) {
+  const id = useId().replace(/:/g, '')
+  const a = ROOM_ART[kind] || ROOM_ART.subject_room
   return (
-    <span style={{ width: size, height: size, borderRadius: Math.round(size * 0.3), background: ROOM_TINT[kind] || BG2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: Math.round(size * 0.46), flexShrink: 0 }}>
-      {emoji}
+    <span className={className} style={{ width: size, height: size, display: 'inline-flex', flexShrink: 0, ...style }}>
+      <svg width={size} height={size} viewBox="0 0 48 48" style={{ display: 'block' }}>
+        <defs>
+          <linearGradient id={`a${id}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={a.g[0]} /><stop offset="1" stopColor={a.g[1]} /></linearGradient>
+          <linearGradient id={`g${id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".5" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
+        </defs>
+        <rect x="3" y="5.5" width="42" height="40" rx="13" fill={a.g[1]} opacity=".22" />
+        <rect x="3" y="3" width="42" height="40" rx="13" fill={`url(#a${id})`} />
+        <rect x="3" y="3" width="42" height="20" rx="13" fill={`url(#g${id})`} />
+        <g transform="translate(12 10.5)" fill="rgba(255,255,255,0.22)" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{a.d}</g>
+      </svg>
     </span>
   )
 }
 
-// Small room label pill (icon + name) in the room's accent tint.
-export function RoomPill({ kind, emoji, children }) {
+// Bare line glyph of a room (for pills and small labels), in the room's accent colour.
+export function RoomGlyph({ kind, size = 13, color }) {
+  const a = ROOM_ART[kind] || ROOM_ART.subject_room
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: FS.tag, fontWeight: 700, color: ROOM_GRADIENT[kind] || T2, background: ROOM_TINT[kind] || BG2, borderRadius: 20, padding: '3px 9px', lineHeight: 1.3 }}>
-      <span style={{ fontSize: 11 }}>{emoji}</span>{children}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || ROOM_GRADIENT[kind] || 'currentColor'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>{a.d}</svg>
+  )
+}
+
+// Small room label pill (icon + name) in the room's accent tint.
+export function RoomPill({ kind, children }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: FS.tag, fontWeight: 600, color: ROOM_GRADIENT[kind] || T2, background: ROOM_TINT[kind] || BG2, borderRadius: 20, padding: '3px 10px 3px 8px', lineHeight: 1.3 }}>
+      <RoomGlyph kind={kind} size={12} />{children}
     </span>
   )
 }

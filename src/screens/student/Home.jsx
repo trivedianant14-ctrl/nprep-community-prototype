@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { StatusBar, T1, T2, T3, BD, BG2, P, PL, PB, PD, G, GL, GB, R, RL, RB, INK, ORANGE_D, PURPLE, NAVY, AZ } from '../shared'
+import { StatusBar, T1, T2, T3, BD, BG2, P, PL, PB, PD, G, GL, GB, R, RL, RB, INK, ORANGE_D, PURPLE, NAVY, AZ, RoomIcon } from '../shared'
 import { Orbit } from './art'
 
 const STORIES = [
@@ -122,8 +122,8 @@ export default function Home({ onOpenCommunity, onExit, state }) {
               Stuck on today's question? Just ask — no query form, no waiting. Real students, daily discussions, your exam room.
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap', padding: '0 12px' }}>
-              {['🔥 Daily Dose', '📖 Subject Room', '🎯 Exam Room'].map(chip => (
-                <span key={chip} style={{ fontSize: 11, fontWeight: 500, color: T1, background: '#fff', border: `1px solid ${BD}`, borderRadius: 20, padding: '5px 11px', boxShadow: '0 1px 3px rgba(19,27,99,0.05)' }}>{chip}</span>
+              {[['daily_dose', 'Daily Dose'], ['subject_room', 'Subject Room'], ['exam_room', 'Exam Room']].map(([k, label]) => (
+                <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 500, color: T1, background: '#fff', border: `1px solid ${BD}`, borderRadius: 20, padding: '4px 11px 4px 5px', boxShadow: '0 1px 3px rgba(19,27,99,0.05)' }}><RoomIcon kind={k} size={20} />{label}</span>
               ))}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', margin: '14px 20px 14px', fontSize: 10.5, color: INK }}>
