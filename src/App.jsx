@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import Landing from './screens/Landing'
 import StudentApp from './screens/student/StudentApp'
 import CommunityCMS from './screens/cms/CommunityCMS'
+import LoadingScreen from './screens/LoadingScreen'
+
+const SPLASH_MIN_MS = 1400
 
 async function api(path, { method = 'GET', body } = {}) {
   const res = await fetch(`/api${path}`, {
@@ -20,6 +23,12 @@ export default function App() {
   const [topScreen, setTopScreen] = useState('landing') // landing | student | cms
   const [state, setState] = useState(null)
   const [error, setError] = useState(null)
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false)
+  const [splashGone, setSplashGone] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setMinTimeElapsed(true), SPLASH_MIN_MS)
+    return () => clearTimeout(t)
+  }, [])
 
   const refresh = useCallback(async () => {
     try {
@@ -69,16 +78,18 @@ export default function App() {
 
   const exitToLanding = () => setTopScreen('landing')
 
-  if (!state) {
-    return (
-      <div className="fade-in" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', color: error ? '#791F1F' : '#5a5a78', fontSize: 14, padding: 24, textAlign: 'center' }}>
-        {!error && <img src="/nprep-logo.jpg" alt="" style={{ width: 44, height: 44, borderRadius: 12 }} />}
-        {error ? `Couldn't reach the backend: ${error}` : <div className="spinner" aria-label="Loading" />}
-      </div>
-    )
-  }
+  // Splash: stays up until the first /api/state has arrived AND a minimum time has passed (so a
+  // fast response doesn't flash it), then plays its exit animation and unmounts.
+  const ready = !!state && minTimeElapsed
+  useEffect(() => {
+    if (!ready || splashGone) return
+    const t = setTimeout(() => setSplashGone(true), 500)
+    return () => clearTimeout(t)
+  }, [ready, splashGone])
 
   return (
+    <>
+    {state && (
     <div className="desktop-wrapper">
       {topScreen === 'landing' && <div className="fade-in"><Landing onSelect={setTopScreen} /></div>}
 
@@ -117,5 +128,8 @@ export default function App() {
         />
       )}
     </div>
+    )}
+    {!splashGone && <LoadingScreen error={state ? null : error} leaving={ready} onRetry={refresh} />}
+    </>
   )
 }

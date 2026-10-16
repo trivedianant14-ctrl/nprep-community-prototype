@@ -1,0 +1,45 @@
+import { useEffect, useState } from 'react'
+
+const MESSAGES = ['Warming up the rooms…', "Fetching today's Daily Dose…", 'Catching up on new posts…', 'Almost there…']
+const ROOM_EMOJIS = ['🔥', '📖', '🎯', '🎥', '📺', '📰', '💼']
+
+// Branded splash shown while the first /api/state response is on its way. The logo floats inside
+// two pulsing halos with an orbiting dot, the seven room icons bounce in sequence, and a progress
+// bar sweeps while the status line cycles. When the data is ready the parent flips `leaving` and
+// the whole screen scales up and fades out. `error` swaps the progress for a retry button.
+export default function LoadingScreen({ error, leaving, onRetry }) {
+  const [i, setI] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setI(n => (n + 1) % MESSAGES.length), 1300)
+    return () => clearInterval(t)
+  }, [])
+
+  return (
+    <div className={`splash${leaving ? ' leaving' : ''}`} role="status" aria-live="polite" aria-label="Loading NPrep Community">
+      <div className="splash-logo-wrap">
+        <span className="splash-halo" />
+        <span className="splash-halo h2" />
+        <span className="splash-orbit"><i /></span>
+        <img src="/nprep-logo.jpg" alt="" className="splash-logo" />
+      </div>
+
+      <div className="splash-title">NPrep Community</div>
+
+      <div className="splash-rooms" aria-hidden="true">
+        {ROOM_EMOJIS.map((e, n) => <span key={e} style={{ '--i': n }}>{e}</span>)}
+      </div>
+
+      {error ? (
+        <div className="splash-error">
+          <div>Couldn't reach the backend: {error}</div>
+          <button onClick={onRetry} className="btn-sm-primary" style={{ marginTop: 12 }}>Try again</button>
+        </div>
+      ) : (
+        <>
+          <div className="splash-bar"><span /></div>
+          <div key={i} className="splash-msg">{MESSAGES[i]}</div>
+        </>
+      )}
+    </div>
+  )
+}
