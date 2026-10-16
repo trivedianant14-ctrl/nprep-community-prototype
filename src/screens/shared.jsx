@@ -145,8 +145,7 @@ export function FlagIcon({ size = 13, color = T2 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4"/><path d="M4 4h13l-2 4.5 2 4.5H4"/></svg>
 }
 
-// Room icons in the NPrep style: a glossy rounded gradient tile with a white line glyph — the same
-// treatment as the official Lectures / QBank / Mini Test icons — one hue per room.
+// Line glyphs per room (used by RoomGlyph in the small room tags).
 const ROOM_ART = {
   daily_dose: { g: ['#FFD36B', '#F28C05'], d: <path d="M12 2.8c.9 3.3 4.6 5.1 4.6 9.4A4.6 4.6 0 0112 17a4.6 4.6 0 01-4.6-4.8c0-2 .9-3.1 2-4.3.3 1.3 1 2 1.7 2.2C10.9 8 10.9 5.3 12 2.8z" /> },
   subject_room: { g: ['#6CC0FF', '#1E7CFF'], d: <><path d="M3.5 5.8C6.3 4.7 9.4 5 12 6.8c2.6-1.8 5.7-2.1 8.5-1v12.6c-2.8-1.1-5.9-.8-8.5 1-2.6-1.8-5.7-2.1-8.5-1z" /><path d="M12 6.8v12.6" /></> },
@@ -156,20 +155,78 @@ const ROOM_ART = {
   recent_updates: { g: ['#7E89F0', '#2E3AB0'], d: <><path d="M4 9.8v4.4h3.2l7.3 4.1V5.7L7.2 9.8z" /><path d="M17.4 9.2a3.7 3.7 0 010 5.6" /></> },
   nursing_jobs: { g: ['#6EDC9A', '#1E9E57'], d: <><rect x="3.5" y="7.5" width="17" height="12" rx="2.6" /><path d="M9 7.5V6a1.6 1.6 0 011.6-1.6h2.8A1.6 1.6 0 0115 6v1.5M3.5 13h17" /></> },
 }
+// Room icons in the official NPrep subject-icon style: a pale-blue gradient tile holding a small
+// glossy all-blue object (cobalt, azure, navy, with white highlights) — one object per room.
+const OBJ_SHADOW = <ellipse cx="24" cy="40.5" rx="11" ry="2.4" fill="#1769E8" opacity=".16" />
+function objectFor(kind, u) {
+  const b1 = `url(#b1${u})`, b2 = `url(#b2${u})`, hi = `url(#hi${u})`
+  switch (kind) {
+    case 'daily_dose': // flame
+      return <>{OBJ_SHADOW}
+        <path d="M24 8.5c1.7 5.4 8.2 8 8.2 16.6a8.2 8.2 0 01-16.4 0c0-3.7 1.6-5.9 3.4-8.2.5 2 1.6 3.2 2.8 3.6C21.3 15.6 21 12 24 8.5z" fill={b1} />
+        <path d="M24 8.5c1.7 5.4 8.2 8 8.2 16.6a8.2 8.2 0 01-16.4 0c0-3.7 1.6-5.9 3.4-8.2.5 2 1.6 3.2 2.8 3.6C21.3 15.6 21 12 24 8.5z" fill={hi} />
+        <path d="M24 22c1 2.6 3.9 3.9 3.9 7.4a3.9 3.9 0 01-7.8 0c0-1.7.8-2.7 1.7-3.7.5 1 1 1.5 1.6 1.7-.8-2-.6-3.8.6-5.4z" fill="#fff" opacity=".9" /></>
+    case 'subject_room': // open book
+      return <>{OBJ_SHADOW}
+        <path d="M7.5 17.5C14 14.8 20 15.6 24 18.8c4-3.2 10-4 16.5-1.3v18.3c-6.500-2.700-12.500-1.900-16.500 1.300-4-3.200-10-4-16.500-1.300z" fill={b2} />
+        <path d="M10 15.2c5.400-1.900 10.600-1 14 2v17c-3.400-3-8.600-3.900-14-2z" fill="#fff" />
+        <path d="M38 15.2c-5.400-1.900-10.600-1-14 2v17c3.400-3 8.600-3.900 14-2z" fill="#EAF4FF" />
+        <path d="M13 20.500c3-.8 6-.4 8.500 1M13 25c3-.8 6-.4 8.500 1M27 21.500c2.500-1.400 5.500-1.800 8.500-1M27 26c2.500-1.400 5.500-1.800 8.500-1" stroke="#7DBBFF" strokeWidth="1.500" strokeLinecap="round" fill="none" />
+        <path d="M24 17.500v17" stroke="#131B63" strokeWidth="1.200" opacity=".4" /></>
+    case 'exam_room': // clipboard with checklist
+      return <>{OBJ_SHADOW}
+        <rect x="12.500" y="10" width="23" height="28" rx="4.500" fill={b1} />
+        <rect x="12.500" y="10" width="23" height="14" rx="4.500" fill={hi} />
+        <rect x="15.500" y="14.500" width="17" height="20.500" rx="2.500" fill="#fff" />
+        <rect x="18.500" y="7.500" width="11" height="6.500" rx="2.500" fill={b2} />
+        <path d="M18.500 21l1.500 1.500 2.700-3M18.500 27.500l1.500 1.500 2.700-3" stroke="#1E7CFF" strokeWidth="1.600" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <path d="M25 21h5.500M25 27.500h5.500" stroke="#7DBBFF" strokeWidth="1.800" strokeLinecap="round" /></>
+    case 'webinar_threads': // video camera
+      return <>{OBJ_SHADOW}
+        <rect x="8" y="14.500" width="23" height="19" rx="5.500" fill={b1} />
+        <rect x="8" y="14.500" width="23" height="9" rx="5.500" fill={hi} />
+        <path d="M31.500 21.500l8.500-5v15l-8.500-5z" fill={b2} />
+        <circle cx="14.500" cy="20.500" r="2.200" fill="#fff" />
+        <rect x="14" y="26" width="11" height="2.600" rx="1.300" fill="#fff" opacity=".55" /></>
+    case 'yt_lectures': // monitor with play button
+      return <>{OBJ_SHADOW}
+        <rect x="7.500" y="10" width="33" height="23" rx="4.500" fill={b2} />
+        <rect x="9.500" y="12" width="29" height="19" rx="3" fill={b1} />
+        <rect x="9.500" y="12" width="29" height="9.500" rx="3" fill={hi} />
+        <path d="M21 16.500v10l9-5z" fill="#fff" />
+        <rect x="21" y="33" width="6" height="3.500" fill="#4B7BE8" />
+        <rect x="15.500" y="36" width="17" height="3" rx="1.500" fill={b2} /></>
+    case 'recent_updates': // megaphone
+      return <>{OBJ_SHADOW}
+        <path d="M8 19.500a2 2 0 012-2h7l15-7.500v26L17 28.500h-7a2 2 0 01-2-2z" fill={b1} />
+        <path d="M8 19.500a2 2 0 012-2h7l15-7.500v10H8z" fill={hi} />
+        <ellipse cx="32" cy="23" rx="2.400" ry="13" fill={b2} />
+        <rect x="12" y="27" width="5.500" height="9" rx="2.200" fill={b2} />
+        <path d="M37 18a7 7 0 010 10M40 14.500a12 12 0 010 17" stroke="#5DB2FF" strokeWidth="2" strokeLinecap="round" fill="none" /></>
+    case 'nursing_jobs': // briefcase
+    default:
+      return <>{OBJ_SHADOW}
+        <path d="M18 17v-3.500a3 3 0 013-3h6a3 3 0 013 3V17" stroke={b2} strokeWidth="3" fill="none" strokeLinecap="round" />
+        <rect x="7.500" y="16" width="33" height="22" rx="5.500" fill={b1} />
+        <rect x="7.500" y="16" width="33" height="11" rx="5.500" fill={hi} />
+        <rect x="7.500" y="26" width="33" height="3" fill={b2} opacity=".4" />
+        <rect x="21" y="23.500" width="6" height="8" rx="2" fill="#fff" />
+        <circle cx="24" cy="27.500" r="1.200" fill="#131B63" /></>
+  }
+}
 export function RoomIcon({ kind, size = 44, style, className }) {
-  const id = useId().replace(/:/g, '')
-  const a = ROOM_ART[kind] || ROOM_ART.subject_room
+  const u = useId().replace(/:/g, '')
   return (
     <span className={className} style={{ width: size, height: size, display: 'inline-flex', flexShrink: 0, ...style }}>
       <svg width={size} height={size} viewBox="0 0 48 48" style={{ display: 'block' }}>
         <defs>
-          <linearGradient id={`a${id}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={a.g[0]} /><stop offset="1" stopColor={a.g[1]} /></linearGradient>
-          <linearGradient id={`g${id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".5" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
+          <linearGradient id={`bg${u}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#D0E8FF" /><stop offset="1" stopColor="#EEF6FF" /></linearGradient>
+          <linearGradient id={`b1${u}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#5DB2FF" /><stop offset="1" stopColor="#1769E8" /></linearGradient>
+          <linearGradient id={`b2${u}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#3E5FDC" /><stop offset="1" stopColor="#131B63" /></linearGradient>
+          <linearGradient id={`hi${u}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".5" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
         </defs>
-        <rect x="3" y="5.5" width="42" height="40" rx="13" fill={a.g[1]} opacity=".22" />
-        <rect x="3" y="3" width="42" height="40" rx="13" fill={`url(#a${id})`} />
-        <rect x="3" y="3" width="42" height="20" rx="13" fill={`url(#g${id})`} />
-        <g transform="translate(12 10.5)" fill="rgba(255,255,255,0.22)" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{a.d}</g>
+        <rect x="1.500" y="1.500" width="45" height="45" rx="14" fill={`url(#bg${u})`} />
+        {objectFor(kind, u)}
       </svg>
     </span>
   )
