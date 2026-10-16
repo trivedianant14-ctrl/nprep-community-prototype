@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { StatusBar, BackIcon, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, P, AZ, G, GL, INK, roomKindFromKey, RoomIcon, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, JoinButton, FS } from '../../shared'
+import { StatusBar, BackIcon, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, P, AZ, G, GL, INK, roomKindFromKey, RoomIcon, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, JoinButton, roomGradient, CARD_BORDER, FS } from '../../shared'
 import PostCard from './PostCard'
 
 const FEED_BG = '#F2F8FF'
@@ -103,7 +103,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
                 const hasRoom = roomKeysFor(tile, examKey).length > 0
                 return (
                   <button key={tile.key} onClick={() => onOpenTile(tile)} className="room-card stagger"
-                    style={{ '--i': i, flex: '0 0 auto', width: 136, textAlign: 'left', background: 'white', border: `1px solid ${BD}`, borderRadius: 16, padding: 12, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 1px 2px rgba(11,18,48,0.05)' }}>
+                    style={{ '--i': i, flex: '0 0 auto', width: 136, textAlign: 'left', background: roomGradient(tile.kind), border: `1px solid ${CARD_BORDER}`, borderRadius: 20, padding: 12, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 1px 2px rgba(11,18,48,0.05)' }}>
                     <RoomIcon kind={tile.kind} size={42} />
                     <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                       <span style={{ fontSize: FS.body, fontWeight: 700, color: INK }}>{tile.label}</span>

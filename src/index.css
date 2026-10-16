@@ -319,3 +319,7 @@ button[aria-label="Back"]:active svg { transform: translateX(-4px); }
 /* Orbit items on the Home community entry drift gently */
 .orbit-item { animation: orbitFloat 5s ease-in-out infinite; }
 @keyframes orbitFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* Toast countdown bar */
+.toast-timer { transform-origin: left center; animation: toastTimer linear forwards; }
+@keyframes toastTimer { from { transform: scaleX(1); } to { transform: scaleX(0); } }

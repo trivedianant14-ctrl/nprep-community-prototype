@@ -97,11 +97,11 @@ export default function Home({ onOpenCommunity, onExit, state }) {
           <div style={{ ...sectionTitle, marginBottom: 10 }}>Learn & Practice</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
             {[
-              { label: 'Lectures', cap: 'Lakhs of practice questions.', emoji: '🎥', bg: '#EEF3FF' },
-              { label: 'QBank', cap: 'Lakhs of practice questions.', emoji: '📚', bg: '#FFF3EA' },
-              { label: 'Mock', cap: 'Lakhs of practice questions.', emoji: '📝', bg: '#FDEEF3' },
+              { label: 'Lectures', cap: 'Lakhs of practice questions.', emoji: '🎥', bg: '#C6DCFF' },
+              { label: 'QBank', cap: 'Lakhs of practice questions.', emoji: '📚', bg: '#FFD9BE' },
+              { label: 'Mock', cap: 'Lakhs of practice questions.', emoji: '📝', bg: '#FFCDDD' },
             ].map(t => (
-              <div key={t.label} style={{ background: t.bg, borderRadius: 14, padding: '14px 10px 12px', textAlign: 'center' }}>
+              <div key={t.label} style={{ background: `linear-gradient(180deg, ${t.bg} 0%, #FFFFFF 66%)`, border: '1px solid #DCE5F3', borderRadius: 20, padding: '14px 10px 12px', textAlign: 'center' }}>
                 <div style={{ fontSize: 26, marginBottom: 8 }}>{t.emoji}</div>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: INK }}>{t.label}</div>
                 <div style={{ fontSize: 9.5, color: T2, marginTop: 3, lineHeight: 1.4 }}>{t.cap}</div>

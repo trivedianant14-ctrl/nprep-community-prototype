@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 // Official NPrep theme, sampled from the real app designs: navy primary buttons (#131B63), azure
 // accent for links / active states (#008DFF), and a pale blue page (#F2F8FF) with soft blue tints.
@@ -498,4 +498,79 @@ export function JoinButton({ joined, onToggle, size = 'md', label = 'Join room',
       {icon}{joined ? joinedLabel : label}
     </Tag>
   )
+}
+
+// ---------- Join feedback: a toast (room icon + Undo) and a short chime ----------
+let toastSetter = null
+export function showToast(t) { toastSetter?.({ id: Date.now() + Math.random(), ...t }) }
+
+// Two soft sine notes (E5 → A5) synthesised with the Web Audio API — no audio file needed. Called
+// straight from the tap, so the browser allows it. Fails silently where audio is unavailable.
+let audioCtx = null
+export function playJoinSound() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext
+    if (!AC) return
+    audioCtx = audioCtx || new AC()
+    if (audioCtx.state === 'suspended') audioCtx.resume()
+    const t0 = audioCtx.currentTime
+    ;[[659.25, 0, 0.2], [880, 0.1, 0.34]].forEach(([freq, delay, len]) => {
+      const osc = audioCtx.createOscillator()
+      const gain = audioCtx.createGain()
+      osc.type = 'sine'
+      osc.frequency.value = freq
+      gain.gain.setValueAtTime(0.0001, t0 + delay)
+      gain.gain.exponentialRampToValueAtTime(0.16, t0 + delay + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + delay + len)
+      osc.connect(gain).connect(audioCtx.destination)
+      osc.start(t0 + delay)
+      osc.stop(t0 + delay + len + 0.03)
+    })
+    navigator.vibrate?.(12)
+  } catch { /* audio unavailable — the toast still shows */ }
+}
+
+export function ToastHost({ lift = 0 }) {
+  const [t, setT] = useState(null)
+  useEffect(() => { toastSetter = setT; return () => { if (toastSetter === setT) toastSetter = null } }, [])
+  const life = t?.undo ? 4600 : 2800
+  useEffect(() => {
+    if (!t) return
+    const id = setTimeout(() => setT(null), life)
+    return () => clearTimeout(id)
+  }, [t, life])
+  if (!t) return null
+  return (
+    <div key={t.id} className="toast-up" role="status" aria-live="polite"
+      style={{ position: 'absolute', left: 12, right: 12, bottom: 14 + lift, zIndex: 130, display: 'flex', alignItems: 'center', gap: 11, background: NAVY, color: '#fff', borderRadius: 18, padding: '10px 12px 12px 10px', boxShadow: '0 12px 28px rgba(19,27,99,0.38)', overflow: 'hidden' }}>
+      {t.roomKind
+        ? <RoomIcon kind={t.roomKind} size={38} />
+        : <span style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.14)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 17 }}>👋</span>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>{t.title}</div>
+        {t.sub && <div style={{ fontSize: 11, opacity: 0.75, marginTop: 2, lineHeight: 1.35 }}>{t.sub}</div>}
+      </div>
+      {t.undo && (
+        <button onClick={() => { t.undo(); setT(null) }} className="pill-btn" style={{ flexShrink: 0, background: 'rgba(255,255,255,0.16)', color: '#fff', border: 'none', borderRadius: 14, padding: '6px 13px', fontSize: 11.5, fontWeight: 600 }}>Undo</button>
+      )}
+      <span className="toast-timer" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 2.5, background: AZ, animationDuration: `${life}ms` }} />
+    </div>
+  )
+}
+
+// Card gradients in each room's colour family: a tinted top that fades to white (the official card
+// look). 'strong' is for standalone cards; 'soft' for dense list cards like feed posts.
+export const ROOM_GRAD_TOP = {
+  daily_dose: '#FFE2B0',
+  subject_room: '#C6E4FF',
+  exam_room: '#DDD0FF',
+  webinar_threads: '#BDEFE6',
+  yt_lectures: '#FFCFDF',
+  recent_updates: '#D0D6FF',
+  nursing_jobs: '#C9EFD8',
+}
+export const CARD_BORDER = '#DCE5F3'
+export function roomGradient(kind, strength = 'strong') {
+  const top = strength === 'soft' ? (ROOM_TINT[kind] || '#EAF4FF') : (ROOM_GRAD_TOP[kind] || '#C6E4FF')
+  return `linear-gradient(180deg, ${top} 0%, #FFFFFF ${strength === 'soft' ? 52 : 62}%)`
 }

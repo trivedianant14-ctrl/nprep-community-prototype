@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BackHeader, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, NAVY, AZ, G, GL, INK, ROOM_GRADIENT, ROOM_TINT, RoomIcon, RoomGlyph, JoinButton, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, FS } from '../../shared'
+import { BackHeader, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, NAVY, AZ, G, GL, INK, ROOM_GRADIENT, ROOM_TINT, ROOM_GRAD_TOP, roomGradient, CARD_BORDER, RoomIcon, RoomGlyph, JoinButton, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, FS } from '../../shared'
 import PostCard from './PostCard'
 
 const CONTRIBUTOR_POST_KINDS = ['subject_room', 'exam_room']
@@ -62,7 +62,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
 
       <div className="scroll" style={{ flex: 1, overflowY: 'auto', background: FEED_BG }}>
         {/* Room header: icon, name, purpose, members/cadence and one big Join button */}
-        <div key={tile.key} className="fade-in" style={{ background: `linear-gradient(180deg, ${ROOM_TINT[tile.kind] || '#E6F2FF'} 0%, #F2F8FF 100%)`, padding: '18px 16px 16px' }}>
+        <div key={tile.key} className="fade-in" style={{ background: `linear-gradient(180deg, ${ROOM_GRAD_TOP[tile.kind] || '#C6E4FF'} 0%, #F2F8FF 100%)`, padding: '18px 16px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <RoomIcon kind={tile.kind} size={60} style={{ filter: 'drop-shadow(0 6px 10px rgba(19,27,99,0.18))' }} />
             <div style={{ minWidth: 0 }}>
@@ -204,7 +204,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
                 const k = rt.kind === 'exam_room' ? examRoomKeyFor(state, profile.exam) : rt.key
                 const isJoined = k ? enrolledRoomKeys.includes(k) : false
                 return (
-                  <div key={rt.key} className="stagger" style={{ '--i': i, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 16, background: here ? '#EAF6FF' : '#fff', border: `1.5px solid ${here ? AZ : BD}` }}>
+                  <div key={rt.key} className="stagger" style={{ '--i': i, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 16, background: here ? '#EAF6FF' : roomGradient(rt.kind, 'soft'), border: `1.5px solid ${here ? AZ : CARD_BORDER}` }}>
                     <button onClick={() => { setExplore(false); if (!here) onSwitchRoom(rt) }} className="row-tap" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', textAlign: 'left', padding: 0 }}>
                       <RoomIcon kind={rt.kind} size={42} />
                       <span style={{ flex: 1, minWidth: 0 }}>

@@ -4,7 +4,7 @@ import CommunityHome from './community/CommunityHome'
 import RoomView from './community/RoomView'
 import ThreadDetail from './community/ThreadDetail'
 import LoadingScreen from '../LoadingScreen'
-import { P, BD, T3 } from '../shared'
+import { P, BD, T3, ToastHost, showToast, playJoinSound } from '../shared'
 
 const OPEN_COMMUNITY_MESSAGES = ['Opening your rooms…', "Loading today's posts…", 'Almost there…']
 const LOADER_HOLD_MS = 1300 // how long the loader covers Home before Community slides in
@@ -54,6 +54,31 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
   // and without detouring back through the Community landing screen.
   const switchRoom = (tile) => { setActiveTile(tile); go('room') }
 
+  // Join feedback — a toast (room icon + Undo) and a short chime whenever the student joins a room:
+  // tapping Join, liking a post in a room they haven't joined (which auto-joins it), or picking their
+  // exam (which auto-joins that Exam Room).
+  const roomOf = (key) => state.rooms.find(r => r.key === key)
+  const announceJoin = (key) => {
+    const room = roomOf(key)
+    playJoinSound()
+    showToast({ roomKind: room?.kind, title: `You joined ${room?.label || 'the room'}`, sub: 'New posts from here will show up in your feed.', undo: () => onSetRoomJoined(key, false) })
+  }
+  const joinRoom = (key, join) => {
+    if (join) announceJoin(key)
+    else showToast({ title: `You left ${roomOf(key)?.label || 'the room'}`, sub: "You won't get new posts from it.", undo: () => onSetRoomJoined(key, true) })
+    return onSetRoomJoined(key, join)
+  }
+  const likeThread = (id) => {
+    const t = state.threads.find(x => x.id === id)
+    if (t && !t.likedByMe && !state.enrolledRoomKeys.includes(t.roomKey)) announceJoin(t.roomKey)
+    return onLikeThread(id)
+  }
+  const pickExam = (exam) => {
+    const key = state.examRoomKeys?.[exam]
+    if (key && !state.enrolledRoomKeys.includes(key)) announceJoin(key)
+    return onSetExam(exam)
+  }
+
   return (
     <div className="phone">
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -64,11 +89,11 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
         {screen === 'community' && (
           <CommunityHome
             state={state}
-            onSetExam={onSetExam}
-            onSetRoomJoined={onSetRoomJoined}
+            onSetExam={pickExam}
+            onSetRoomJoined={joinRoom}
             onOpenTile={(tile) => { setActiveTile(tile); go('room') }}
             onOpenThreadInRoom={openThreadInRoom}
-            onLikeThread={onLikeThread}
+            onLikeThread={likeThread}
             onRegisterForWebinar={onRegisterForWebinar}
             onBack={goHome}
           />
@@ -77,11 +102,11 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
           <RoomView
             state={state}
             tile={activeTile}
-            onSetExam={onSetExam}
-            onSetRoomJoined={onSetRoomJoined}
+            onSetExam={pickExam}
+            onSetRoomJoined={joinRoom}
             onOpenThread={openThread}
             onSwitchRoom={switchRoom}
-            onLikeThread={onLikeThread}
+            onLikeThread={likeThread}
             onCreatePost={onCreatePost}
             onRegisterForWebinar={onRegisterForWebinar}
             onBack={() => go('community')}
@@ -93,7 +118,7 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             threadId={activeThreadId}
             onPostReply={onPostReply}
             onVote={onVote}
-            onLikeThread={onLikeThread}
+            onLikeThread={likeThread}
             onLikeReply={onLikeReply}
             onReportReply={onReportReply}
             onRegisterForWebinar={onRegisterForWebinar}
@@ -118,6 +143,8 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
           ))}
         </div>
       )}
+
+      <ToastHost lift={screen === 'home' || screen === 'community' ? 58 : 0} />
 
       {loader && <LoadingScreen inline leaving={loader === 'out'} messages={OPEN_COMMUNITY_MESSAGES} />}
     </div>

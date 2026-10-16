@@ -1,4 +1,4 @@
-import { T1, T2, T3, BD, BG2, PL, PB, PD, INK, Avatar, RoomPill, TagPill, LikeButton, CommentIcon, ShareIcon, ContributorBadge, contributorTier, AttachmentPreview, ResourceLink, LiveBadge, VerifiedIcon, JoinButton, timeAgo, FS } from '../../shared'
+import { T1, T2, T3, BD, BG2, PL, PB, PD, INK, Avatar, RoomPill, TagPill, LikeButton, CommentIcon, ShareIcon, ContributorBadge, contributorTier, AttachmentPreview, ResourceLink, LiveBadge, VerifiedIcon, JoinButton, roomGradient, CARD_BORDER, timeAgo, FS } from '../../shared'
 
 // Feed card — the shared post unit for the Community feed and every room list. Layout follows
 // the card feeds in Nextdoor / Lex / Reddit: author row on top, bold title, clamped body,
@@ -15,7 +15,7 @@ export default function PostCard({ t, tile, roomLabel, showRoom = true, contribu
     <div role="button" tabIndex={0} className="post-card stagger"
       onClick={onOpen}
       onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onOpen()}
-      style={{ '--i': Math.min(index, 8), background: 'white', borderRadius: 16, padding: '14px 14px 8px', margin: '0 12px 10px', cursor: 'pointer', boxShadow: '0 1px 2px rgba(11,18,48,0.05)', border: `1px solid ${BD}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      style={{ '--i': Math.min(index, 8), background: tile ? roomGradient(tile.kind, 'soft') : 'white', borderRadius: 18, padding: '14px 14px 8px', margin: '0 12px 10px', cursor: 'pointer', boxShadow: '0 1px 2px rgba(11,18,48,0.05)', border: `1px solid ${CARD_BORDER}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
         {official
           ? <img src="/nprep-logo.jpg" alt="" style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, boxShadow: '0 0 0 1px rgba(0,0,0,0.06)' }} />
