@@ -219,7 +219,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
               }
               return (
                 <div key={opt.id} style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: `1.5px solid ${isMine ? PB : BD}`, marginBottom: 8, background: 'white' }}>
-                  <div style={{ position: 'absolute', inset: 0, width: `${pct}%`, background: isMine ? PL : BG2, transition: 'width 0.3s' }} />
+                  <div className="grow-x" style={{ position: 'absolute', inset: 0, width: `${pct}%`, background: isMine ? PL : BG2, transition: 'width 0.3s' }} />
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 13px' }}>
                     <span style={{ fontSize: FS.body, fontWeight: 600, color: isMine ? PD : T1 }}>{opt.label}{isMine ? ' ✓' : ''}</span>
                     <span style={{ fontSize: FS.small, fontWeight: 700, color: isMine ? PD : T2 }}>{pct}%</span>
@@ -264,7 +264,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
       </div>
 
       {reportMsg && (
-        <div style={{ position: 'absolute', left: 16, right: 16, bottom: 76, background: INK, color: 'white', borderRadius: 12, padding: '11px 14px', fontSize: FS.small, fontWeight: 600, textAlign: 'center', zIndex: 20 }}>{reportMsg}</div>
+        <div className="toast-up" style={{ position: 'absolute', left: 16, right: 16, bottom: 76, background: INK, color: 'white', borderRadius: 12, padding: '11px 14px', fontSize: FS.small, fontWeight: 600, textAlign: 'center', zIndex: 20 }}>{reportMsg}</div>
       )}
 
       {reportTarget && (
@@ -373,7 +373,7 @@ function CommentNode({ reply, depth, childrenMap, expandedIds, toggleExpand, onL
 
   if (reply.hidden) {
     return (
-      <div>
+      <div className="comment-in">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
           <span style={{ width: 28, height: 28, borderRadius: '50%', background: BG2, border: `1px dashed ${BD}`, flexShrink: 0 }} />
           <div style={{ fontSize: FS.small, color: T3, fontStyle: 'italic' }}>This comment was removed</div>
@@ -392,7 +392,7 @@ function CommentNode({ reply, depth, childrenMap, expandedIds, toggleExpand, onL
   const textBtn = { display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: '5px 2px', borderRadius: 8, fontSize: FS.meta + 0.5, fontWeight: 700, color: T2 }
 
   return (
-    <div>
+    <div className="comment-in">
       <div style={{ display: 'flex', gap: 8, padding: '6px 0' }}>
         <Avatar name={reply.authorName} size={30} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -450,7 +450,7 @@ function CommentNode({ reply, depth, childrenMap, expandedIds, toggleExpand, onL
 function CommentChildren({ kids, depth, childrenMap, expandedIds, toggleExpand, onLikeReply, onReplyTo, onReport, contributors, opKey }) {
   const indent = depth < 4 ? 22 : 8
   return (
-    <div style={{ marginLeft: 15, paddingLeft: indent - 15 + 8, borderLeft: `2px solid ${BD}` }}>
+    <div className="reveal" style={{ marginLeft: 15, paddingLeft: indent - 15 + 8, borderLeft: `2px solid ${BD}` }}>
       {kids.map(child => (
         <CommentNode key={child.id} reply={child} depth={depth + 1} childrenMap={childrenMap} expandedIds={expandedIds} toggleExpand={toggleExpand}
           onLikeReply={onLikeReply} onReplyTo={onReplyTo} onReport={onReport} contributors={contributors} opKey={opKey} />

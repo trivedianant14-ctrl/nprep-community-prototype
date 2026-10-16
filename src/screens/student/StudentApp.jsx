@@ -9,6 +9,16 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
   const [screen, setScreen] = useState('home') // home | community | room | thread
   const [activeTile, setActiveTile] = useState(null)
   const [activeThreadId, setActiveThreadId] = useState(null)
+  // Directional screen motion: going deeper (community -> room -> thread) slides in from the
+  // right, going back slides in from the left, and hopping between the two bottom tabs fades.
+  const [anim, setAnim] = useState('')
+  const DEPTH = { home: 0, community: 1, room: 2, thread: 3 }
+  const go = (next) => {
+    if (next === screen) return
+    const bothTabs = DEPTH[next] <= 1 && DEPTH[screen] <= 1
+    setAnim(bothTabs ? 'screen-fade' : DEPTH[next] > DEPTH[screen] ? 'screen-forward' : 'screen-backward')
+    setScreen(next)
+  }
 
   // PRD P0 #5 — auto-enroll fires on first Community tab open; onboard() is idempotent
   // server-side so calling it every time this screen mounts is safe.
@@ -16,20 +26,21 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
     if (screen === 'community') onOnboard()
   }, [screen, onOnboard])
 
-  const openThread = (id) => { setActiveThreadId(id); setScreen('thread') }
+  const openThread = (id) => { setActiveThreadId(id); go('thread') }
   // Opening a post from the mixed all-rooms feed also sets the matching room tile, so the
   // thread's Back button lands on that post's own room instead of a stale previous one.
-  const openThreadInRoom = (id, tile) => { setActiveTile(tile); setActiveThreadId(id); setScreen('thread') }
+  const openThreadInRoom = (id, tile) => { setActiveTile(tile); setActiveThreadId(id); go('thread') }
 
-  const goHome = () => setScreen('home')
-  const goCommunity = () => setScreen('community')
+  const goHome = () => go('home')
+  const goCommunity = () => go('community')
   // Room-chip switch — jumps straight into the new room's thread list without a popup
   // and without detouring back through the Community landing screen.
-  const switchRoom = (tile) => { setActiveTile(tile); setScreen('room') }
+  const switchRoom = (tile) => { setActiveTile(tile); go('room') }
 
   return (
     <div className="phone">
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div key={screen === 'thread' ? `thread-${activeThreadId}` : screen} className={`screen-trans ${anim}`}>
         {screen === 'home' && (
           <Home onOpenCommunity={goCommunity} onExit={onExit} state={state} />
         )}
@@ -38,7 +49,7 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             state={state}
             onSetExam={onSetExam}
             onSetRoomJoined={onSetRoomJoined}
-            onOpenTile={(tile) => { setActiveTile(tile); setScreen('room') }}
+            onOpenTile={(tile) => { setActiveTile(tile); go('room') }}
             onOpenThreadInRoom={openThreadInRoom}
             onLikeThread={onLikeThread}
             onRegisterForWebinar={onRegisterForWebinar}
@@ -57,7 +68,7 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             onLikeThread={onLikeThread}
             onCreatePost={onCreatePost}
             onRegisterForWebinar={onRegisterForWebinar}
-            onBack={() => setScreen('community')}
+            onBack={() => go('community')}
           />
         )}
         {screen === 'thread' && activeThreadId && (
@@ -70,9 +81,10 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             onLikeReply={onLikeReply}
             onReportReply={onReportReply}
             onRegisterForWebinar={onRegisterForWebinar}
-            onBack={() => setScreen(activeTile ? 'room' : 'community')}
+            onBack={() => go(activeTile ? 'room' : 'community')}
           />
         )}
+        </div>
       </div>
 
       {(screen === 'home' || screen === 'community') && (
@@ -82,7 +94,7 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
             { id: 'community', label: 'Community', onClick: goCommunity, icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.4"/><path d="M3 20c0-3 2.5-5 6-5s6 2 6 5"/><path d="M15.5 15.2c2.5.3 4.5 2 4.5 4.8"/></svg> },
           ].map(t => (
             <button key={t.id} onClick={t.onClick} className="action-btn" style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '9px 0 10px', background: 'none', border: 'none', borderRadius: 0, color: screen === t.id ? P : T3, cursor: 'pointer' }}>
-              {screen === t.id && <span style={{ position: 'absolute', top: 0, left: '30%', right: '30%', height: 2.5, borderRadius: '0 0 3px 3px', background: P }} />}
+              {screen === t.id && <span className="fade-in" style={{ position: 'absolute', top: 0, left: '30%', right: '30%', height: 2.5, borderRadius: '0 0 3px 3px', background: P }} />}
               {t.icon}
               <span style={{ fontSize: 10.5, fontWeight: screen === t.id ? 700 : 500 }}>{t.label}</span>
             </button>

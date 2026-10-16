@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+
 // Shared color tokens + small presentation pieces reused across screens. The brand tokens
 // (blue, green, red, amber, text, border) are unchanged from the original prototype; this
 // file only adds the room accents and the refined presentation components built on them.
@@ -189,9 +191,12 @@ export function CommentIcon({ size = 13, color = T2 }) {
 // Single heart — outline when not liked, filled coral when liked, with a light pop-scale
 // on the liked state so the tap reads as an action, not just a toggle.
 export function HeartIcon({ size = 15, liked, color = T2 }) {
+  // Pop only when the heart is toggled on — not for hearts that are already liked on first paint.
+  const mounted = useRef(false)
+  useEffect(() => { mounted.current = true }, [])
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={liked ? '#E5385A' : 'none'} stroke={liked ? '#E5385A' : color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-      style={{ transform: liked ? 'scale(1.08)' : 'scale(1)', transition: 'transform 0.15s cubic-bezier(0.34,1.56,0.64,1)' }}>
+      style={{ transform: liked ? 'scale(1.08)' : 'scale(1)', transition: 'transform 0.15s cubic-bezier(0.34,1.56,0.64,1), fill 0.2s, stroke 0.2s', animation: liked && mounted.current ? 'heartPop 0.45s cubic-bezier(0.34,1.56,0.64,1)' : 'none' }}>
       <path d="M20.8 8.6c0-3-2.2-5.4-5-5.4-1.9 0-3.6 1.1-4.6 2.9C10.2 4.3 8.5 3.2 6.6 3.2c-2.8 0-5 2.4-5 5.4 0 6.4 9.6 11.8 9.6 11.8s9.6-5.4 9.6-11.8z"/>
     </svg>
   )

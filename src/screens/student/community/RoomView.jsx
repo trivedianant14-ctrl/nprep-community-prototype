@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BackHeader, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, G, GL, INK, ROOM_GRADIENT, ROOM_TINT, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, FS } from '../../shared'
 import PostCard from './PostCard'
 
@@ -19,6 +19,9 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
   const [subjectFilter, setSubjectFilter] = useState('all')
   const [tab, setTab] = useState('recent') // 'recent' | 'top'
   const [sentNotice, setSentNotice] = useState(false) // contributor just posted — held for approval
+  const activeChip = useRef(null)
+  // Keep the current room's chip centered when hopping between rooms.
+  useEffect(() => { activeChip.current?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }) }, [tile.key])
 
   const share = async (t) => {
     const result = await shareThread(t)
@@ -61,7 +64,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
 
       <div className="scroll" style={{ flex: 1, overflowY: 'auto', background: FEED_BG }}>
         {/* Room header: icon, name, purpose, members/cadence and one big Join button */}
-        <div style={{ background: ROOM_TINT[tile.kind] || BG2, padding: '18px 16px 16px' }}>
+        <div key={tile.key} className="fade-in" style={{ background: ROOM_TINT[tile.kind] || BG2, padding: '18px 16px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ width: 56, height: 56, borderRadius: 18, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, boxShadow: '0 1px 3px rgba(11,18,48,0.08)' }}>{tile.emoji}</div>
             <div style={{ minWidth: 0 }}>
@@ -86,20 +89,22 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
             {roomTiles.map(rt => {
               const on = rt.key === tile.key
               return (
-                <button key={rt.key} onClick={() => !on && onSwitchRoom(rt)} className="pill-btn" aria-label={`Open ${rt.label}`}
+                <button key={rt.key} ref={on ? activeChip : null} onClick={() => !on && onSwitchRoom(rt)} className="pill-btn" aria-label={`Open ${rt.label}`}
                   style={{ flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: FS.small, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: on ? 'default' : 'pointer', border: `1.5px solid ${on ? ROOM_GRADIENT[rt.kind] : BD}`, background: on ? ROOM_TINT[rt.kind] : 'white', color: on ? ROOM_GRADIENT[rt.kind] : T2 }}>
                   <span style={{ fontSize: 12 }}>{rt.emoji}</span>{rt.label}
                 </button>
               )
             })}
           </div>
-          <div style={{ display: 'flex' }}>
+          <div style={{ display: 'flex', position: 'relative' }}>
             {[['recent', 'Recent'], ['top', 'Top']].map(([id, label]) => (
               <button key={id} onClick={() => setTab(id)}
-                style={{ flex: 1, padding: '11px 0 10px', background: 'none', border: 'none', borderBottom: `2.5px solid ${tab === id ? INK : 'transparent'}`, fontSize: FS.body, fontWeight: tab === id ? 800 : 600, color: tab === id ? INK : T3, cursor: 'pointer' }}>
+                style={{ flex: 1, padding: '11px 0 12px', background: 'none', border: 'none', fontSize: FS.body, fontWeight: tab === id ? 800 : 600, color: tab === id ? INK : T3, cursor: 'pointer', transition: 'color 0.2s' }}>
                 {label}
               </button>
             ))}
+            {/* Sliding underline between Recent and Top */}
+            <span style={{ position: 'absolute', bottom: 0, left: 0, width: '50%', height: 2.5, background: INK, borderRadius: 2, transform: `translateX(${tab === 'top' ? 100 : 0}%)`, transition: 'transform 0.32s cubic-bezier(0.3, 1.2, 0.4, 1)' }} />
           </div>
         </div>
 
@@ -136,21 +141,21 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
         )}
 
         {badgePaused && (
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#FFF8E8', border: '1px solid #FFE0AD', borderRadius: 14, padding: '11px 14px', margin: '12px 12px 0' }}>
+          <div className="reveal" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#FFF8E8', border: '1px solid #FFE0AD', borderRadius: 14, padding: '11px 14px', margin: '12px 12px 0' }}>
             <span style={{ fontSize: 15, lineHeight: 1.2 }}>⏸️</span>
             <span style={{ fontSize: FS.small, fontWeight: 600, color: '#8A5300', lineHeight: 1.45 }}>Your Contributor badge is paused after {state.inactivityDays || 30} days with no activity. Comment again to bring it back — posting needs a fresh approval from NPrep.</span>
           </div>
         )}
 
         {sentNotice && (
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: GL, border: '1px solid #97C459', borderRadius: 14, padding: '11px 14px', margin: '12px 12px 0' }}>
+          <div className="reveal" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: GL, border: '1px solid #97C459', borderRadius: 14, padding: '11px 14px', margin: '12px 12px 0' }}>
             <span style={{ fontSize: 15, lineHeight: 1.2 }}>✅</span>
             <span style={{ fontSize: FS.small, fontWeight: 600, color: G, lineHeight: 1.45 }}>Sent for approval. Your post will show to other students once NPrep approves it.</span>
           </div>
         )}
 
         {pendingApproval && (
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#FFF8E8', border: '1px solid #FFE0AD', borderRadius: 14, padding: '11px 14px', margin: '12px 12px 0' }}>
+          <div className="reveal" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#FFF8E8', border: '1px solid #FFE0AD', borderRadius: 14, padding: '11px 14px', margin: '12px 12px 0' }}>
             <span style={{ fontSize: 15, lineHeight: 1.2 }}>🎖️</span>
             <span style={{ fontSize: FS.small, fontWeight: 600, color: '#8A5300', lineHeight: 1.45 }}>You're a Top Contributor — posting here opens up once NPrep approves you.</span>
           </div>
@@ -164,13 +169,15 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
           </EmptyState>
         )}
 
-        {list.map(t => (
-          <PostCard key={t.id} t={t} tile={tile} showRoom={false} contributors={state.contributors} sharedId={sharedId}
+        <div key={`${tile.key}|${tab}|${subjectFilter}`}>
+        {list.map((t, i) => (
+          <PostCard key={t.id} index={i} t={t} tile={tile} showRoom={false} contributors={state.contributors} sharedId={sharedId}
             onOpen={() => onOpenThread(t.id)}
             onLike={() => onLikeThread(t.id)}
             onShare={() => share(t)}
             onRegister={() => onRegisterForWebinar(t.id)} />
         ))}
+        </div>
         <div style={{ height: 80 }} />
       </div>
 

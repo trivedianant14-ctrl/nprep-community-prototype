@@ -71,18 +71,19 @@ export default function App() {
 
   if (!state) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', color: error ? '#791F1F' : '#5a5a78', fontSize: 14, padding: 24, textAlign: 'center' }}>
-        {error ? `Couldn't reach the backend: ${error}` : 'Loading…'}
+      <div className="fade-in" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', color: error ? '#791F1F' : '#5a5a78', fontSize: 14, padding: 24, textAlign: 'center' }}>
+        {!error && <img src="/nprep-logo.jpg" alt="" style={{ width: 44, height: 44, borderRadius: 12 }} />}
+        {error ? `Couldn't reach the backend: ${error}` : <div className="spinner" aria-label="Loading" />}
       </div>
     )
   }
 
   return (
     <div className="desktop-wrapper">
-      {topScreen === 'landing' && <Landing onSelect={setTopScreen} />}
+      {topScreen === 'landing' && <div className="fade-in"><Landing onSelect={setTopScreen} /></div>}
 
       {topScreen === 'student' && (
-        <div className="phone-wrapper">
+        <div className="phone-wrapper fade-in">
           <StudentApp
             state={state}
             onOnboard={onboard}

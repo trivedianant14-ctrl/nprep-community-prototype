@@ -68,7 +68,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
         </button>
         <button onClick={() => setShowNotifs(true)} className="icon-btn" aria-label="Notifications" style={{ ...iconBtn, position: 'relative' }}>
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-          {notifications.length > 0 && <span style={{ position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: '50%', background: '#E5385A', border: '1.5px solid white' }} />}
+          {notifications.length > 0 && <span className="dot-pulse" style={{ position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: '50%', background: '#E5385A', border: '1.5px solid white' }} />}
         </button>
       </div>
 
@@ -103,12 +103,12 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
               <span style={{ fontSize: FS.small, color: T3 }}>{roomTiles.length} rooms · 5,000+ students</span>
             </div>
             <div className="scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '0 12px 4px' }}>
-              {roomTiles.map(tile => {
+              {roomTiles.map((tile, i) => {
                 const joined = isEnrolled(tile, enrolledRoomKeys, examKey)
                 const hasRoom = roomKeysFor(tile, examKey).length > 0
                 return (
-                  <button key={tile.key} onClick={() => onOpenTile(tile)} className="room-card"
-                    style={{ flex: '0 0 auto', width: 136, textAlign: 'left', background: 'white', border: `1px solid ${BD}`, borderRadius: 16, padding: 12, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 1px 2px rgba(11,18,48,0.05)' }}>
+                  <button key={tile.key} onClick={() => onOpenTile(tile)} className="room-card stagger"
+                    style={{ '--i': i, flex: '0 0 auto', width: 136, textAlign: 'left', background: 'white', border: `1px solid ${BD}`, borderRadius: 16, padding: 12, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 1px 2px rgba(11,18,48,0.05)' }}>
                     <RoomIcon kind={tile.kind} emoji={tile.emoji} size={40} />
                     <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                       <span style={{ fontSize: FS.body, fontWeight: 700, color: INK }}>{tile.label}</span>
@@ -150,11 +150,12 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
           </EmptyState>
         )}
 
-        {feed.map(t => {
+        <div key={`${filter}|${q}`}>
+        {feed.map((t, i) => {
           const tile = tileForRoomKey(t.roomKey, roomTiles)
           const room = rooms.find(r => r.key === t.roomKey)
           return (
-            <PostCard key={t.id} t={t} tile={tile} roomLabel={room ? room.label : tile.label} contributors={contributors}
+            <PostCard key={t.id} index={i} t={t} tile={tile} roomLabel={room ? room.label : tile.label} contributors={contributors}
               joined={enrolledRoomKeys.includes(t.roomKey)} sharedId={sharedId}
               onOpen={() => onOpenThreadInRoom(t.id, tile)}
               onLike={() => onLikeThread(t.id)}
@@ -163,6 +164,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
               onJoin={() => onSetRoomJoined(t.roomKey, true)} />
           )
         })}
+        </div>
         <div style={{ height: 16 }} />
       </div>
 
@@ -176,9 +178,9 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
             </div>
             <div className="scroll" style={{ overflowY: 'auto', padding: '4px 0' }}>
               {notifications.length === 0 && <EmptyState icon="🔔" title="No notifications">No notifications yet.</EmptyState>}
-              {notifications.map(n => (
-                <button key={n.id} onClick={() => { setShowNotifs(false); onOpenThreadFromNotification(n.threadId) }} className="row-tap"
-                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${BD}`, padding: '12px 18px', cursor: 'pointer', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              {notifications.map((n, i) => (
+                <button key={n.id} onClick={() => { setShowNotifs(false); onOpenThreadFromNotification(n.threadId) }} className="row-tap stagger"
+                  style={{ '--i': Math.min(i, 8), width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${BD}`, padding: '12px 18px', cursor: 'pointer', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <span style={{ width: 34, height: 34, borderRadius: 10, background: n.kind === 'daily_dose' ? '#FFF3DD' : n.kind === 'reply' ? PL : n.kind === 'post_status' ? GL : '#F1EAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>{n.kind === 'daily_dose' ? '🔥' : n.kind === 'reply' ? '💬' : n.kind === 'post_status' ? '📝' : '📣'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: FS.small + 0.5, fontWeight: 700, color: INK }}>{n.title}</div>
