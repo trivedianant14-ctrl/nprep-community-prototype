@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, Avatar, HeartIcon, RoomPill, roomKindFromKey, ROOM_GRADIENT, CommentIcon, ShareIcon, shareThread, timeAgo, ContributorBadge, contributorTier, NPrepMark, OPBadge, PaperclipIcon, AttachmentPreview, uploadAttachment, ATTACHMENT_ACCEPT, ResourceLink, LiveBadge, TagPill, FlagIcon, VerifiedIcon, ChevronRight, FS } from '../../shared'
+import { BackHeader, T1, T2, T3, BD, BG2, PL, PB, PD, INK, NAVY, Avatar, HeartIcon, RoomPill, roomKindFromKey, ROOM_GRADIENT, CommentIcon, ShareIcon, shareThread, timeAgo, ContributorBadge, contributorTier, NPrepMark, OPBadge, PaperclipIcon, AttachmentPreview, uploadAttachment, ATTACHMENT_ACCEPT, ResourceLink, LiveBadge, TagPill, FlagIcon, VerifiedIcon, ChevronRight, FS } from '../../shared'
 
 // Why each report reason exists, shown under the reason in the report sheet (Binance / Azar /
 // Vivino pattern: a reason, a one-line explanation, and a chevron).
@@ -121,7 +121,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
   const poll = thread.poll
   const voted = poll && poll.myOptionId != null
   const isWebinar = thread.roomKey === 'webinar_threads'
-  const grad = ROOM_GRADIENT[roomKindFromKey(thread.roomKey)]
+  const grad = NAVY
   const official = !thread.authorName
   const authorLabel = official ? 'NPrep Team' : thread.authorName
   const authorTier = official ? null : contributorTier(contributors[thread.authorKey])
@@ -242,7 +242,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
           }}>
             <span style={{ fontSize: FS.heading, fontWeight: 800, color: INK }}>{replies.length} Comment{replies.length === 1 ? '' : 's'}</span>
             {topLevelReplies.length > 1 && (
-              <div style={{ display: 'flex', gap: 4, background: BG2, borderRadius: 20, padding: 3 }}>
+              <div style={{ display: 'flex', gap: 4, background: '#E5EFFC', borderRadius: 20, padding: 3 }}>
                 {[['relevant', 'Most relevant'], ['all', 'All comments']].map(([id, label]) => (
                   <button key={id} onClick={() => setSortMode(id)}
                     style={{ fontSize: FS.tag, fontWeight: 600, padding: '5px 11px', borderRadius: 20, cursor: 'pointer', border: 'none', background: sortMode === id ? 'white' : 'transparent', boxShadow: sortMode === id ? '0 1px 3px rgba(11,18,48,0.12)' : 'none', color: sortMode === id ? PD : T2 }}>

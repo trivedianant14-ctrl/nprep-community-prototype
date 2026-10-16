@@ -1,15 +1,17 @@
 import { useEffect, useRef } from 'react'
 
-// Shared color tokens + small presentation pieces reused across screens. The brand tokens
-// (blue, green, red, amber, text, border) are unchanged from the original prototype; this
-// file only adds the room accents and the refined presentation components built on them.
-export const P = '#1D5BF0', PL = '#EAF0FE', PB = '#A9C4FA', PD = '#12339B'
+// Official NPrep theme, sampled from the real app designs: navy primary buttons (#131B63), azure
+// accent for links / active states (#008DFF), and a pale blue page (#F2F8FF) with soft blue tints.
+// P is the navy used for filled buttons and active nav; PD is the azure used for links and
+// selected chips; PL / PB are the soft tint and its border.
+export const NAVY = '#131B63', AZ = '#008DFF', PAGE = '#F2F8FF'
+export const P = NAVY, PL = '#E8F2FF', PB = '#B2D9FF', PD = AZ
 export const PURPLE = '#7C3AED'
-export const G = '#3B6D11', GL = '#EAF3DE', GB = '#97C459'
-export const R = '#791F1F', RL = '#FCEBEB', RB = '#F09595'
-export const A = '#633806', AL = '#FAEEDA', AB = '#FAC775'
-export const T1 = '#1a1a2e', T2 = '#5a5a78', T3 = '#9898b0', BD = '#e8e8f2', BG2 = '#f5f5fb'
-export const INK = '#0B1230'
+export const G = '#1E9E57', GL = '#E3F7EC', GB = '#8FD7AF'
+export const R = '#D6322E', RL = '#FDECEC', RB = '#F4A9A7'
+export const A = '#8A5300', AL = '#FFF1D6', AB = '#FAC775'
+export const T1 = '#1B1F2E', T2 = '#5E6578', T3 = '#9AA1B2', BD = '#E3EAF6', BG2 = '#F2F8FF'
+export const INK = '#0D0F1A'
 export const ORANGE = '#FF9E1B', ORANGE_D = '#B96A00'
 
 // Type scale — one place for the sizes used across the student app, so headings, body copy
@@ -85,7 +87,7 @@ export function Avatar({ name, size = 28 }) {
 // a single solid accent instead of a gradient.
 export const ROOM_GRADIENT = {
   daily_dose: '#D97706',
-  subject_room: P,
+  subject_room: AZ,
   exam_room: PURPLE,
   webinar_threads: '#0F8F84',
   yt_lectures: '#D6204A',

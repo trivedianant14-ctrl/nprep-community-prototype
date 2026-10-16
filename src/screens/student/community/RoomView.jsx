@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { BackHeader, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, G, GL, INK, ROOM_GRADIENT, ROOM_TINT, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, FS } from '../../shared'
+import { BackHeader, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, NAVY, AZ, G, GL, INK, ROOM_GRADIENT, ROOM_TINT, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, FS } from '../../shared'
 import PostCard from './PostCard'
 
 const CONTRIBUTOR_POST_KINDS = ['subject_room', 'exam_room']
-const FEED_BG = '#F4F5FA'
+const FEED_BG = '#F2F8FF'
 
 // A single room. Header follows the group pages in Glassdoor / Insight Timer / Reddit (icon,
 // name, purpose, one big Join button); Recent | Top tabs follow Runna; the subject chips
@@ -42,7 +42,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
   list.sort(tab === 'top'
     ? (a, b) => (b.likeCount * 2 + b.replyCount) - (a.likeCount * 2 + a.replyCount) || new Date(b.createdAt) - new Date(a.createdAt)
     : (a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-  const grad = ROOM_GRADIENT[tile.kind]
+  const grad = NAVY // primary actions are navy in the official theme; rooms keep their accent only on icons and pills
 
   const contributor = state.contributors?.demo
   const roomAcceptsContributorPosts = CONTRIBUTOR_POST_KINDS.includes(tile.kind)
@@ -64,7 +64,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
 
       <div className="scroll" style={{ flex: 1, overflowY: 'auto', background: FEED_BG }}>
         {/* Room header: icon, name, purpose, members/cadence and one big Join button */}
-        <div key={tile.key} className="fade-in" style={{ background: ROOM_TINT[tile.kind] || BG2, padding: '18px 16px 16px' }}>
+        <div key={tile.key} className="fade-in" style={{ background: `linear-gradient(180deg, ${ROOM_TINT[tile.kind] || '#E6F2FF'} 0%, #F2F8FF 100%)`, padding: '18px 16px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ width: 56, height: 56, borderRadius: 18, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, boxShadow: '0 1px 3px rgba(11,18,48,0.08)' }}>{tile.emoji}</div>
             <div style={{ minWidth: 0 }}>
@@ -90,7 +90,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
               const on = rt.key === tile.key
               return (
                 <button key={rt.key} ref={on ? activeChip : null} onClick={() => !on && onSwitchRoom(rt)} className="pill-btn pop-on" data-on={on} aria-label={`Open ${rt.label}`}
-                  style={{ flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: FS.small, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: on ? 'default' : 'pointer', border: `1.5px solid ${on ? ROOM_GRADIENT[rt.kind] : BD}`, background: on ? ROOM_TINT[rt.kind] : 'white', color: on ? ROOM_GRADIENT[rt.kind] : T2 }}>
+                  style={{ flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: FS.small, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: on ? 'default' : 'pointer', border: `1.5px solid ${on ? AZ : '#E4F0FF'}`, background: on ? '#EAF6FF' : '#F0F7FF', color: on ? AZ : T2 }}>
                   <span style={{ fontSize: 12 }}>{rt.emoji}</span>{rt.label}
                 </button>
               )
@@ -99,12 +99,12 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
           <div style={{ display: 'flex', position: 'relative' }}>
             {[['recent', 'Recent'], ['top', 'Top']].map(([id, label]) => (
               <button key={id} onClick={() => setTab(id)}
-                style={{ flex: 1, padding: '11px 0 12px', background: 'none', border: 'none', fontSize: FS.body, fontWeight: tab === id ? 800 : 600, color: tab === id ? INK : T3, cursor: 'pointer', transition: 'color 0.2s' }}>
+                style={{ flex: 1, padding: '11px 0 12px', background: 'none', border: 'none', fontSize: FS.body, fontWeight: tab === id ? 600 : 500, color: tab === id ? AZ : T2, cursor: 'pointer', transition: 'color 0.2s' }}>
                 {label}
               </button>
             ))}
             {/* Sliding underline between Recent and Top */}
-            <span style={{ position: 'absolute', bottom: 0, left: 0, width: '50%', height: 2.5, background: INK, borderRadius: 2, transform: `translateX(${tab === 'top' ? 100 : 0}%)`, transition: 'transform 0.32s cubic-bezier(0.3, 1.2, 0.4, 1)' }} />
+            <span style={{ position: 'absolute', bottom: 0, left: 0, width: '50%', height: 2.5, background: AZ, borderRadius: 2, transform: `translateX(${tab === 'top' ? 100 : 0}%)`, transition: 'transform 0.32s cubic-bezier(0.3, 1.2, 0.4, 1)' }} />
           </div>
         </div>
 
@@ -122,7 +122,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
           <div className="scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '12px 12px 2px' }}>
             {['all', ...subjectTags].map(s => (
               <button key={s} onClick={() => setSubjectFilter(s)} className="pill-btn pop-on" data-on={subjectFilter === s}
-                style={{ flex: '0 0 auto', fontSize: FS.tag + 0.5, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: 'pointer', border: `1px solid ${subjectFilter === s ? PB : BD}`, background: subjectFilter === s ? PL : 'white', color: subjectFilter === s ? PD : T2 }}>
+                style={{ flex: '0 0 auto', fontSize: FS.tag + 0.5, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: 'pointer', border: `1.5px solid ${subjectFilter === s ? AZ : '#E4F0FF'}`, background: subjectFilter === s ? '#EAF6FF' : '#F0F7FF', color: subjectFilter === s ? AZ : T2 }}>
                 {s === 'all' ? 'All subjects' : s}
               </button>
             ))}

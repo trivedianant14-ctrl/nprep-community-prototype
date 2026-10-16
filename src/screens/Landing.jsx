@@ -19,7 +19,7 @@ const FLOWS = [
 
 export default function Landing({ onSelect }) {
   return (
-    <div className="landing-page" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '56px 20px', background: '#F6F7FB' }}>
+    <div className="landing-page" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '56px 20px', background: '#F2F8FF' }}>
       <div style={{ width: '100%', maxWidth: 680 }}>
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'white', border: `1px solid ${BD}`, color: PD, fontSize: 11.5, fontWeight: 700, padding: '5px 12px 5px 6px', borderRadius: 20, marginBottom: 16 }}>

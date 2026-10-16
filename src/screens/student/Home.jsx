@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { StatusBar, T1, T2, T3, BD, BG2, P, PL, PB, PD, G, GL, GB, R, RL, RB, INK, ORANGE_D, PURPLE } from '../shared'
+import { StatusBar, T1, T2, T3, BD, BG2, P, PL, PB, PD, G, GL, GB, R, RL, RB, INK, ORANGE_D, PURPLE, NAVY, AZ } from '../shared'
+import { Orbit } from './art'
 
 const STORIES = [
   { label: 'For you', emoji: '🎯', tint: '#FFF3DD' },
@@ -109,22 +110,27 @@ export default function Home({ onOpenCommunity, onExit, state }) {
           </div>
         </div>
 
-        {/* Community teaser — PRD: escape the WhatsApp doubt-group, low-pressure peer
-            replies vs. formal QMS queries. Entry point into the full Community tab. */}
-        <div style={{ margin: '24px 16px 24px', padding: '22px 18px', textAlign: 'center', background: BG2, borderRadius: 16, border: `1px solid ${BD}` }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: PURPLE, letterSpacing: '0.05em' }}>YOUR BATCH IS ALREADY HERE</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: INK, lineHeight: 1.15, marginTop: 8 }}>NPrep</div>
-          <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1.1, color: P, letterSpacing: '0.01em' }}>COMMUNITY</div>
-          <div style={{ fontSize: 12.5, fontWeight: 500, color: T2, marginTop: 10, lineHeight: 1.55, maxWidth: 280, marginLeft: 'auto', marginRight: 'auto' }}>
-            Stuck on today's question? Just ask — no query form, no waiting. Real students, daily discussions, your exam room.
+        {/* Community entry — the official "NPrep COMMUNITY" orbit. Copy follows the PRD (escape the
+            WhatsApp doubt-group; low-pressure peer replies vs. formal QMS queries). */}
+        <div style={{ marginTop: 18, position: 'relative', background: 'linear-gradient(180deg, rgba(242,248,255,0) 0%, #E4F1FF 100%)', paddingBottom: 26, textAlign: 'center' }}>
+          <Orbit />
+          <div style={{ marginTop: -6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: PURPLE, letterSpacing: '0.06em' }}>YOUR BATCH IS ALREADY HERE</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#000', lineHeight: 1.15, letterSpacing: '-0.02em', marginTop: 6 }}>NPrep</div>
+            <div style={{ fontSize: 27, fontWeight: 800, fontStyle: 'italic', color: AZ, lineHeight: 1.15, letterSpacing: '-0.01em' }}>COMMUNITY</div>
+            <div style={{ fontSize: 12, fontWeight: 400, color: T2, margin: '10px auto 0', lineHeight: 1.6, maxWidth: 280 }}>
+              Stuck on today's question? Just ask — no query form, no waiting. Real students, daily discussions, your exam room.
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap', padding: '0 12px' }}>
+              {['🔥 Daily Dose', '📖 Subject Room', '🎯 Exam Room'].map(chip => (
+                <span key={chip} style={{ fontSize: 11, fontWeight: 500, color: T1, background: '#fff', border: `1px solid ${BD}`, borderRadius: 20, padding: '5px 11px', boxShadow: '0 1px 3px rgba(19,27,99,0.05)' }}>{chip}</span>
+              ))}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', margin: '14px 20px 14px', fontSize: 10.5, color: INK }}>
+              <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, #B9D8FF)' }} /><span style={{ color: AZ }}>✦</span> Over <b>5,000+</b> active students every month <span style={{ color: AZ }}>✦</span><span style={{ flex: 1, height: 1, background: 'linear-gradient(270deg, transparent, #B9D8FF)' }} />
+            </div>
+            <button onClick={onOpenCommunity} className="pill-btn" style={{ background: NAVY, color: 'white', fontSize: 13.5, fontWeight: 600, padding: '0 38px', height: 44, borderRadius: 22, border: 'none', cursor: 'pointer', boxShadow: '0 8px 18px rgba(19,27,99,0.28)' }}>Join the Conversation</button>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-            {['🔥 Daily Dose', '📖 Subject Room', '🎯 Exam Room'].map(chip => (
-              <span key={chip} style={{ fontSize: 11, fontWeight: 600, color: T1, background: 'white', border: `1px solid ${BD}`, borderRadius: 20, padding: '5px 11px' }}>{chip}</span>
-            ))}
-          </div>
-          <div style={{ fontSize: 11.5, color: T2, marginTop: 14 }}>Over <b>5,000+</b> active students showing up every month</div>
-          <button onClick={onOpenCommunity} style={{ marginTop: 14, background: P, color: 'white', fontSize: 13.5, fontWeight: 700, padding: '12px 40px', borderRadius: 12, border: 'none', cursor: 'pointer' }}>Join the Conversation</button>
         </div>
       </div>
     </div>

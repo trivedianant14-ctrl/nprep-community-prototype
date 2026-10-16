@@ -1,31 +1,33 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --primary: #1D5BF0;
-  --primary-light: #EAF0FE;
-  --primary-border: #A9C4FA;
-  --primary-dark: #12339B;
-  --green: #3B6D11;
-  --green-light: #EAF3DE;
-  --green-border: #97C459;
+  --primary: #008DFF;
+  --primary-light: #E8F2FF;
+  --primary-border: #B2D9FF;
+  --primary-dark: #131B63;
+  --navy: #131B63;
+  --page: #F2F8FF;
+  --green: #1E9E57;
+  --green-light: #E3F7EC;
+  --green-border: #8FD7AF;
   --amber: #633806;
   --amber-light: #FAEEDA;
   --amber-border: #FAC775;
-  --red: #791F1F;
-  --red-light: #FCEBEB;
-  --red-border: #F09595;
-  --text: #1a1a2e;
-  --text2: #5a5a78;
-  --text3: #9898b0;
-  --border: #e8e8f2;
-  --bg2: #f5f5fb;
+  --red: #D6322E;
+  --red-light: #FDECEC;
+  --red-border: #F4A9A7;
+  --text: #1B1F2E;
+  --text2: #5E6578;
+  --text3: #9AA1B2;
+  --border: #E3EAF6;
+  --bg2: #F2F8FF;
   --white: #ffffff;
 }
 
 html, body, #root {
   height: 100%;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #eeeef5;
+  font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #E9F0FB;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
@@ -149,7 +151,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 /* Light sidebar with a sliding active pill, count badges, stat cards, tabs and bottom toasts —
    the pattern used by the Circle / Klaviyo / Reddit mod-queue references. */
 #root:has(.cms-shell), #root:has(.landing-page) { display: block; padding: 0; overflow-y: auto; }
-.cms-shell { display: flex; min-height: 100vh; width: 100%; background: #F6F7FB; animation: fadeIn 0.3s ease both; }
+.cms-shell { display: flex; min-height: 100vh; width: 100%; background: #F2F8FF; animation: fadeIn 0.3s ease both; }
 .cms-side { width: 248px; flex-shrink: 0; background: #fff; border-right: 1px solid var(--border); color: var(--text); padding: 18px 12px 14px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
 .cms-nav-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text3); padding: 14px 12px 6px; }
 .cms-nav-list { position: relative; display: flex; flex-direction: column; gap: 4px; }
@@ -198,7 +200,7 @@ button.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgb
 .cms-main button:active:not(:disabled) { transform: scale(0.97); }
 .cms-main button.cms-tab:active:not(:disabled), .cms-main button.stat-card:active:not(:disabled) { transform: none; }
 
-.cms-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: 10px; background: #0B1230; color: #fff; font-size: 13px; font-weight: 600; padding: 12px 18px; border-radius: 12px; box-shadow: 0 10px 30px rgba(11,18,48,0.28); animation: toastCenter 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.cms-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: 10px; background: #131B63; color: #fff; font-size: 13px; font-weight: 600; padding: 12px 18px; border-radius: 12px; box-shadow: 0 10px 30px rgba(11,18,48,0.28); animation: toastCenter 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .cms-toast .tick { width: 18px; height: 18px; border-radius: 50%; background: #3FA34D; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
 @media (max-width: 1100px) {
@@ -298,7 +300,7 @@ button[aria-label="Back"]:active svg { transform: translateX(-4px); }
 /* bottom tab: sliding indicator + icon bounce */
 .tab-bar { position: relative; }
 .tab-ind { position: absolute; top: 0; left: 0; width: 50%; display: flex; justify-content: center; transition: transform 0.38s cubic-bezier(0.3, 1.25, 0.4, 1); pointer-events: none; }
-.tab-ind span { width: 40%; height: 2.5px; border-radius: 0 0 3px 3px; background: var(--primary); }
+.tab-ind span { width: 40%; height: 2.5px; border-radius: 0 0 3px 3px; background: var(--navy); }
 .tab-ico { display: inline-flex; transition: transform 0.2s ease; }
 .tab-ico.on { animation: tabBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
 @keyframes tabBounce { 0% { transform: translateY(0) scale(1); } 40% { transform: translateY(-5px) scale(1.2); } 100% { transform: none; } }
@@ -314,3 +316,7 @@ button[aria-label="Back"]:active svg { transform: translateX(-4px); }
 .fab:active > span:first-child { transform: rotate(90deg); }
 
 .pop-in { animation: popIn 0.35s ease both; }
+
+/* Orbit items on the Home community entry drift gently */
+.orbit-item { animation: orbitFloat 5s ease-in-out infinite; }
+@keyframes orbitFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }

@@ -322,7 +322,7 @@ function CreateThreadTab({ rooms, subjectTags, questions, onCreateThread, toast 
       {/* Student-app preview, using the same card the feed renders */}
       <div className="cms-preview">
         <div style={{ fontSize: 12, fontWeight: 700, color: T2, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 10 }}>Student app preview</div>
-        <div style={{ background: '#F4F5FA', border: `1px solid ${BD}`, borderRadius: 24, padding: '16px 0 6px', pointerEvents: 'none' }}>
+        <div style={{ background: '#F2F8FF', border: `1px solid ${BD}`, borderRadius: 24, padding: '16px 0 6px', pointerEvents: 'none' }}>
           <PostCard t={previewThread} tile={room} roomLabel={room?.label} onOpen={noop} onLike={noop} onShare={noop} onRegister={noop} />
         </div>
         {addPoll && pollOptions.some(o => o.trim()) && (

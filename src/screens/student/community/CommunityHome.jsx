@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { StatusBar, BackIcon, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, P, G, GL, INK, roomKindFromKey, RoomIcon, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, timeAgo, FS } from '../../shared'
+import { StatusBar, BackIcon, SearchIcon, T1, T2, T3, BD, BG2, PL, PB, PD, P, AZ, G, GL, INK, roomKindFromKey, RoomIcon, EmptyState, isVisibleToStudent, examRoomKeyFor, shareThread, timeAgo, FS } from '../../shared'
 import PostCard from './PostCard'
 
-const FEED_BG = '#F4F5FA'
+const FEED_BG = '#F2F8FF'
 
 function isEnrolled(tile, enrolledRoomKeys, examKey) {
   if (tile.kind === 'exam_room') return examKey ? enrolledRoomKeys.includes(examKey) : false
@@ -57,17 +57,17 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
   const needsExam = !profile.exam && activeTile?.kind === 'exam_room'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'white' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'linear-gradient(180deg, #D3E7FF 0%, #E6F2FF 100%)' }}>
       <StatusBar />
       <div style={{ padding: '2px 8px 8px 6px', display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
         <button onClick={onBack} className="icon-btn" aria-label="Back" style={iconBtn}>
           <BackIcon />
         </button>
-        <span style={{ fontSize: 22, fontWeight: 800, color: INK, flex: 1, letterSpacing: '-0.01em' }}>Community</span>
-        <button key={searching ? 'search-on' : 'search-off'} onClick={() => { setSearching(s => !s); setQuery('') }} className={`icon-btn${searching ? ' search-open' : ''}`} aria-label="Search posts" style={{ ...iconBtn, color: searching ? P : T1 }}>
+        <span style={{ fontSize: 20, fontWeight: 700, color: INK, flex: 1, letterSpacing: '-0.01em' }}>Community</span>
+        <button key={searching ? 'search-on' : 'search-off'} onClick={() => { setSearching(s => !s); setQuery('') }} className={`icon-btn${searching ? ' search-open' : ''}`} aria-label="Search posts" style={{ ...roundBtn, color: searching ? AZ : T1 }}>
           <SearchIcon size={21} />
         </button>
-        <button onClick={() => { setRinging(true); setTimeout(() => setRinging(false), 750); setShowNotifs(true) }} className={`icon-btn${ringing ? ' bell-ring' : ''}`} aria-label="Notifications" style={{ ...iconBtn, position: 'relative' }}>
+        <button onClick={() => { setRinging(true); setTimeout(() => setRinging(false), 750); setShowNotifs(true) }} className={`icon-btn${ringing ? ' bell-ring' : ''}`} aria-label="Notifications" style={{ ...roundBtn, position: 'relative' }}>
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
           {notifications.length > 0 && <span className="dot-pulse" style={{ position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: '50%', background: '#E5385A', border: '1.5px solid white' }} />}
         </button>
@@ -134,7 +134,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
               const on = filter === c.key
               return (
                 <button key={c.key} onClick={() => setFilter(c.key)} className="pill-btn pop-on" data-on={on}
-                  style={{ flex: '0 0 auto', fontSize: FS.small, fontWeight: 700, padding: '7px 14px', borderRadius: 20, cursor: 'pointer', border: `1.5px solid ${on ? INK : BD}`, background: on ? INK : 'white', color: on ? 'white' : T1 }}>
+                  style={{ flex: '0 0 auto', fontSize: FS.small, fontWeight: on ? 600 : 500, padding: '7px 14px', borderRadius: 20, cursor: 'pointer', border: `1.5px solid ${on ? AZ : '#E4F0FF'}`, background: on ? '#EAF6FF' : '#F0F7FF', color: on ? AZ : INK }}>
                   {c.label}
                 </button>
               )
@@ -198,4 +198,5 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
   )
 }
 
+const roundBtn = { width: 36, height: 36, borderRadius: '50%', background: '#fff', border: '1px solid #E3EAF6', boxShadow: '0 1px 3px rgba(19,27,99,0.08)', cursor: 'pointer', color: T1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 6 }
 const iconBtn = { width: 40, height: 40, borderRadius: 12, background: 'none', border: 'none', cursor: 'pointer', color: T1, display: 'flex', alignItems: 'center', justifyContent: 'center' }
