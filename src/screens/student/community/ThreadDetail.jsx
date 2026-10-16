@@ -19,6 +19,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
   const [reportTarget, setReportTarget] = useState(null) // reply being reported — opens the reason sheet
   const [reportMsg, setReportMsg] = useState('')
   const [replyTo, setReplyTo] = useState(null) // { id, authorName } | null — reply target, any depth
+  const [sending, setSending] = useState(false) // send icon flies off and back after a comment is sent
   const [sortMode, setSortMode] = useState('relevant') // 'relevant' | 'all' — Facebook-style comment sort
   // Nested replies are collapsed by default (Instagram/Twitter-style "N replies") — a
   // reply liked by NPrep Team is the one exception, shown inline without expanding.
@@ -86,6 +87,8 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
 
   const submit = () => {
     if (!draft.trim()) return
+    setSending(true)
+    setTimeout(() => setSending(false), 650)
     onPostReply(thread.id, draft.trim(), false, replyTo?.id ?? null, attachment)
     setDraft('')
     setReplyTo(null)
@@ -313,7 +316,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
       ) : (
         <div style={{ flexShrink: 0, borderTop: `1px solid ${BD}`, background: 'white' }}>
           {replyTo && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: BG2, fontSize: FS.meta + 0.5, color: T2 }}>
+            <div key={replyTo.id} className="reveal" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: BG2, fontSize: FS.meta + 0.5, color: T2 }}>
               <span>Replying to <b style={{ color: T1 }}>{replyTo.authorName}</b></span>
               <button onClick={() => setReplyTo(null)} aria-label="Cancel reply" style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: T3, fontSize: 14, padding: 2 }}>✕</button>
             </div>
@@ -343,7 +346,7 @@ export default function ThreadDetail({ state, threadId, onPostReply, onVote, onL
               style={{ flex: 1, minWidth: 0, border: `1.5px solid ${BD}`, borderRadius: 22, padding: '10px 16px', fontSize: FS.body, background: BG2 }} />
             <button onClick={submit} disabled={!draft.trim()} aria-label="Send reply"
               style={{ background: draft.trim() ? grad : BD, color: 'white', border: 'none', borderRadius: '50%', width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: draft.trim() ? 'pointer' : 'default', flexShrink: 0 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+              <svg className={sending ? 'plane-fly' : undefined} width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
             </button>
           </div>
         </div>

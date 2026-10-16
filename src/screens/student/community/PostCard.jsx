@@ -58,11 +58,11 @@ export default function PostCard({ t, tile, roomLabel, showRoom = true, contribu
         </div>
         <button onClick={e => { e.stopPropagation(); onShare() }} className="action-btn" aria-label="Share"
           style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '6px 4px', borderRadius: 8 }}>
-          <ShareIcon size={16} />
-          <span style={{ fontSize: FS.meta, fontWeight: 600, color: T2 }}>{sharedId === t.id ? 'Link copied' : 'Share'}</span>
+          <span key={sharedId === t.id ? 'copied' : 'share'} className={sharedId === t.id ? 'pop-in' : undefined} style={{ display: 'inline-flex' }}><ShareIcon size={16} color={sharedId === t.id ? PD : T2} /></span>
+          <span key={sharedId === t.id ? 'copied' : 'share'} className={sharedId === t.id ? 'reveal' : undefined} style={{ fontSize: FS.meta, fontWeight: 600, color: sharedId === t.id ? PD : T2 }}>{sharedId === t.id ? 'Link copied ✓' : 'Share'}</span>
         </button>
         {isWebinarUpcoming ? (
-          <button onClick={e => { e.stopPropagation(); onRegister() }} className="pill-btn"
+          <button onClick={e => { e.stopPropagation(); onRegister() }} className="pill-btn pop-on" data-on={!!t.registeredByMe}
             style={{ marginLeft: 'auto', fontSize: 11.5, fontWeight: 700, color: t.registeredByMe ? T2 : 'white', background: t.registeredByMe ? BG2 : PD, border: 'none', borderRadius: 20, padding: '6px 14px', cursor: 'pointer' }}>
             {t.registeredByMe ? 'Registered ✓' : 'Register'}
           </button>

@@ -76,7 +76,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
             {allInRoom.length} post{allInRoom.length === 1 ? '' : 's'} · {tile.cadence}
           </div>
           {roomKey && (
-            <button onClick={() => onSetRoomJoined(roomKey, !joined)} className="pill-btn"
+            <button onClick={() => onSetRoomJoined(roomKey, !joined)} className="pill-btn pop-on" data-on={joined}
               style={{ width: '100%', marginTop: 12, fontSize: FS.body + 0.5, fontWeight: 700, padding: '12px', borderRadius: 14, cursor: 'pointer', border: joined ? `1.5px solid ${BD}` : 'none', background: joined ? 'white' : grad, color: joined ? T2 : 'white' }}>
               {joined ? 'Joined ✓' : 'Join room'}
             </button>
@@ -89,7 +89,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
             {roomTiles.map(rt => {
               const on = rt.key === tile.key
               return (
-                <button key={rt.key} ref={on ? activeChip : null} onClick={() => !on && onSwitchRoom(rt)} className="pill-btn" aria-label={`Open ${rt.label}`}
+                <button key={rt.key} ref={on ? activeChip : null} onClick={() => !on && onSwitchRoom(rt)} className="pill-btn pop-on" data-on={on} aria-label={`Open ${rt.label}`}
                   style={{ flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: FS.small, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: on ? 'default' : 'pointer', border: `1.5px solid ${on ? ROOM_GRADIENT[rt.kind] : BD}`, background: on ? ROOM_TINT[rt.kind] : 'white', color: on ? ROOM_GRADIENT[rt.kind] : T2 }}>
                   <span style={{ fontSize: 12 }}>{rt.emoji}</span>{rt.label}
                 </button>
@@ -121,7 +121,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
         {hasSubjectFilter && (
           <div className="scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '12px 12px 2px' }}>
             {['all', ...subjectTags].map(s => (
-              <button key={s} onClick={() => setSubjectFilter(s)} className="pill-btn"
+              <button key={s} onClick={() => setSubjectFilter(s)} className="pill-btn pop-on" data-on={subjectFilter === s}
                 style={{ flex: '0 0 auto', fontSize: FS.tag + 0.5, fontWeight: 700, padding: '6px 12px', borderRadius: 20, cursor: 'pointer', border: `1px solid ${subjectFilter === s ? PB : BD}`, background: subjectFilter === s ? PL : 'white', color: subjectFilter === s ? PD : T2 }}>
                 {s === 'all' ? 'All subjects' : s}
               </button>
@@ -182,7 +182,7 @@ export default function RoomView({ state, tile, onSetExam, onSetRoomJoined, onOp
       </div>
 
       {canPost && (
-        <button onClick={() => setShowCompose(true)} aria-label="Create post"
+        <button onClick={() => setShowCompose(true)} aria-label="Create post" className="fab"
           style={{ position: 'absolute', right: 18, bottom: 18, height: 52, padding: '0 20px 0 16px', borderRadius: 26, background: grad, color: 'white', border: 'none', boxShadow: '0 4px 14px rgba(11,18,48,0.25)', fontSize: FS.body + 0.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 24, lineHeight: 1, fontWeight: 500 }}>+</span> Post
         </button>

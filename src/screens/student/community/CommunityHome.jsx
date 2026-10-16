@@ -31,6 +31,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
   const [filter, setFilter] = useState('all') // 'all' | room tile key
   const [searching, setSearching] = useState(false)
   const [query, setQuery] = useState('')
+  const [ringing, setRinging] = useState(false) // bell rings when tapped
   const { roomTiles, profile, enrolledRoomKeys, exams, notifications, threads, rooms, contributors = {} } = state
   const examKey = examRoomKeyFor(state, profile.exam)
 
@@ -63,17 +64,17 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
           <BackIcon />
         </button>
         <span style={{ fontSize: 22, fontWeight: 800, color: INK, flex: 1, letterSpacing: '-0.01em' }}>Community</span>
-        <button onClick={() => { setSearching(s => !s); setQuery('') }} className="icon-btn" aria-label="Search posts" style={{ ...iconBtn, color: searching ? P : T1 }}>
+        <button key={searching ? 'search-on' : 'search-off'} onClick={() => { setSearching(s => !s); setQuery('') }} className={`icon-btn${searching ? ' search-open' : ''}`} aria-label="Search posts" style={{ ...iconBtn, color: searching ? P : T1 }}>
           <SearchIcon size={21} />
         </button>
-        <button onClick={() => setShowNotifs(true)} className="icon-btn" aria-label="Notifications" style={{ ...iconBtn, position: 'relative' }}>
+        <button onClick={() => { setRinging(true); setTimeout(() => setRinging(false), 750); setShowNotifs(true) }} className={`icon-btn${ringing ? ' bell-ring' : ''}`} aria-label="Notifications" style={{ ...iconBtn, position: 'relative' }}>
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
           {notifications.length > 0 && <span className="dot-pulse" style={{ position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: '50%', background: '#E5385A', border: '1.5px solid white' }} />}
         </button>
       </div>
 
       {searching && (
-        <div style={{ padding: '0 16px 10px', flexShrink: 0 }}>
+        <div className="reveal" style={{ padding: '0 16px 10px', flexShrink: 0 }}>
           <div style={{ position: 'relative' }}>
             <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', display: 'flex' }}><SearchIcon size={16} color={T3} /></span>
             <input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="Search posts…" className="field"
@@ -132,7 +133,7 @@ export default function CommunityHome({ state, onSetExam, onSetRoomJoined, onOpe
             {[{ key: 'all', label: 'All' }, ...roomTiles].map(c => {
               const on = filter === c.key
               return (
-                <button key={c.key} onClick={() => setFilter(c.key)} className="pill-btn"
+                <button key={c.key} onClick={() => setFilter(c.key)} className="pill-btn pop-on" data-on={on}
                   style={{ flex: '0 0 auto', fontSize: FS.small, fontWeight: 700, padding: '7px 14px', borderRadius: 20, cursor: 'pointer', border: `1.5px solid ${on ? INK : BD}`, background: on ? INK : 'white', color: on ? 'white' : T1 }}>
                   {c.label}
                 </button>

@@ -194,12 +194,28 @@ export function HeartIcon({ size = 15, liked, color = T2 }) {
   // Pop only when the heart is toggled on — not for hearts that are already liked on first paint.
   const mounted = useRef(false)
   useEffect(() => { mounted.current = true }, [])
+  const burst = liked && mounted.current
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={liked ? '#E5385A' : 'none'} stroke={liked ? '#E5385A' : color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-      style={{ transform: liked ? 'scale(1.08)' : 'scale(1)', transition: 'transform 0.15s cubic-bezier(0.34,1.56,0.64,1), fill 0.2s, stroke 0.2s', animation: liked && mounted.current ? 'heartPop 0.45s cubic-bezier(0.34,1.56,0.64,1)' : 'none' }}>
-      <path d="M20.8 8.6c0-3-2.2-5.4-5-5.4-1.9 0-3.6 1.1-4.6 2.9C10.2 4.3 8.5 3.2 6.6 3.2c-2.8 0-5 2.4-5 5.4 0 6.4 9.6 11.8 9.6 11.8s9.6-5.4 9.6-11.8z"/>
-    </svg>
+    <span className="heart-wrap">
+      <svg width={size} height={size} viewBox="0 0 24 24" fill={liked ? '#E5385A' : 'none'} stroke={liked ? '#E5385A' : color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        style={{ transform: liked ? 'scale(1.08)' : 'scale(1)', transition: 'transform 0.15s cubic-bezier(0.34,1.56,0.64,1), fill 0.2s, stroke 0.2s', animation: burst ? 'heartPop 0.45s cubic-bezier(0.34,1.56,0.64,1)' : 'none' }}>
+        <path d="M20.8 8.6c0-3-2.2-5.4-5-5.4-1.9 0-3.6 1.1-4.6 2.9C10.2 4.3 8.5 3.2 6.6 3.2c-2.8 0-5 2.4-5 5.4 0 6.4 9.6 11.8 9.6 11.8s9.6-5.4 9.6-11.8z"/>
+      </svg>
+      {burst && (
+        <span className="heart-burst" aria-hidden="true">
+          {[0, 60, 120, 180, 240, 300].map((a, i) => <i key={a} style={{ '--a': `${a}deg`, '--c': ['#E5385A', '#FF9EB0', '#FFB020'][i % 3] }} />)}
+        </span>
+      )}
+    </span>
   )
+}
+
+// Number that bumps (rises into place) whenever its value changes — but not on first paint.
+function Count({ value }) {
+  const prev = useRef(value)
+  const changed = prev.current !== value
+  useEffect(() => { prev.current = value }, [value])
+  return <span key={value} className={changed ? 'count-bump' : undefined}>{value}</span>
 }
 
 export function ShareIcon({ size = 15, color = T2 }) {
@@ -215,7 +231,7 @@ export function LikeButton({ liked, count, onToggle, size = 15 }) {
   return (
     <button onClick={onToggle} className="action-btn" style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '6px 4px', borderRadius: 8 }}>
       <HeartIcon size={size} liked={liked} />
-      <span style={{ fontSize: FS.meta, fontWeight: 600, color: liked ? '#E5385A' : T2 }}>{count > 0 ? count : 'Like'}</span>
+      <span style={{ fontSize: FS.meta, fontWeight: 600, color: liked ? '#E5385A' : T2 }}>{count > 0 ? <Count value={count} /> : 'Like'}</span>
     </button>
   )
 }

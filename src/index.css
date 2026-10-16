@@ -257,3 +257,60 @@ button.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgb
 /* In-phone variant: covers just the app frame (used when opening Community from Home) */
 .splash.inline { position: absolute; z-index: 60; border-radius: inherit; }
 .splash.inline .splash-rooms span { width: 30px; height: 30px; font-size: 15px; }
+
+/* ---------- Tap interactions ---------- */
+* { -webkit-tap-highlight-color: transparent; }
+
+.ripple-wave { position: absolute; border-radius: 50%; pointer-events: none; transform: scale(0); opacity: 1; animation: rippleOut 0.6s cubic-bezier(0.2, 0.6, 0.3, 1) forwards; z-index: 0; }
+@keyframes rippleOut { to { transform: scale(1); opacity: 0; } }
+
+/* press feedback */
+.post-card:active { transform: scale(0.985) !important; }
+.room-card > span:first-child { transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.room-card:active > span:first-child { transform: scale(1.18) rotate(-8deg); }
+button[aria-label="Back"] svg { transition: transform 0.18s ease; }
+button[aria-label="Back"]:active svg { transform: translateX(-4px); }
+
+/* selected chip / joined button pops when it turns on */
+.pop-on[data-on="true"] { animation: chipPop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes chipPop { 0% { transform: scale(0.88); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+
+/* heart: ring + particles burst out when a like turns on */
+.heart-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.heart-burst { position: absolute; inset: 0; pointer-events: none; }
+.heart-burst::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid rgba(229, 56, 90, 0.55); animation: heartRing 0.5s ease-out both; }
+.heart-burst i { position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; background: var(--c, #E5385A); animation: heartDot 0.55s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+@keyframes heartRing { from { transform: scale(0.4); opacity: 1; } to { transform: scale(1.9); opacity: 0; } }
+@keyframes heartDot { from { opacity: 1; transform: rotate(var(--a)) translateY(-3px) scale(1); } to { opacity: 0; transform: rotate(var(--a)) translateY(-21px) scale(0.2); } }
+
+/* like / comment counts bump when they change */
+.count-bump { display: inline-block; animation: countBump 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes countBump { 0% { transform: translateY(7px) scale(0.8); opacity: 0.2; } 100% { transform: none; opacity: 1; } }
+
+/* notification bell rings on tap */
+.bell-ring svg { transform-origin: 50% 0; animation: bellRing 0.7s ease; }
+@keyframes bellRing { 0%, 100% { transform: rotate(0); } 15% { transform: rotate(16deg); } 30% { transform: rotate(-14deg); } 45% { transform: rotate(10deg); } 60% { transform: rotate(-7deg); } 78% { transform: rotate(3deg); } }
+
+/* search icon spins in when the search bar opens */
+.search-open svg { animation: searchSpin 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes searchSpin { from { transform: rotate(-90deg) scale(0.7); } to { transform: none; } }
+
+/* bottom tab: sliding indicator + icon bounce */
+.tab-bar { position: relative; }
+.tab-ind { position: absolute; top: 0; left: 0; width: 50%; display: flex; justify-content: center; transition: transform 0.38s cubic-bezier(0.3, 1.25, 0.4, 1); pointer-events: none; }
+.tab-ind span { width: 40%; height: 2.5px; border-radius: 0 0 3px 3px; background: var(--primary); }
+.tab-ico { display: inline-flex; transition: transform 0.2s ease; }
+.tab-ico.on { animation: tabBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes tabBounce { 0% { transform: translateY(0) scale(1); } 40% { transform: translateY(-5px) scale(1.2); } 100% { transform: none; } }
+
+/* send icon flies off and back when a comment is sent */
+.plane-fly { animation: planeFly 0.6s ease; }
+@keyframes planeFly { 0% { transform: translate(0, 0); opacity: 1; } 45% { transform: translate(16px, -16px) scale(0.8); opacity: 0; } 55% { transform: translate(-14px, 14px) scale(0.8); opacity: 0; } 100% { transform: none; opacity: 1; } }
+
+/* floating post button: press shrinks it, plus rotates */
+.fab { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.fab:active { transform: scale(0.92); box-shadow: 0 2px 8px rgba(11,18,48,0.25) !important; }
+.fab > span:first-child { display: inline-block; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.fab:active > span:first-child { transform: rotate(90deg); }
+
+.pop-in { animation: popIn 0.35s ease both; }
