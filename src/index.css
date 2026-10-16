@@ -253,3 +253,7 @@ button.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgb
   .splash-msg { animation: none !important; opacity: 1; }
   .splash-bar span { width: 100%; transform: none; }
 }
+
+/* In-phone variant: covers just the app frame (used when opening Community from Home) */
+.splash.inline { position: absolute; z-index: 60; border-radius: inherit; }
+.splash.inline .splash-rooms span { width: 30px; height: 30px; font-size: 15px; }

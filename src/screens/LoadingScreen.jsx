@@ -7,15 +7,18 @@ const ROOM_EMOJIS = ['🔥', '📖', '🎯', '🎥', '📺', '📰', '💼']
 // two pulsing halos with an orbiting dot, the seven room icons bounce in sequence, and a progress
 // bar sweeps while the status line cycles. When the data is ready the parent flips `leaving` and
 // the whole screen scales up and fades out. `error` swaps the progress for a retry button.
-export default function LoadingScreen({ error, leaving, onRetry }) {
+//
+// `inline` renders it inside the phone frame (covering just the app, not the whole page) — used
+// when opening Community from Home — and `messages` swaps the status lines.
+export default function LoadingScreen({ error, leaving, onRetry, inline = false, messages = MESSAGES }) {
   const [i, setI] = useState(0)
   useEffect(() => {
-    const t = setInterval(() => setI(n => (n + 1) % MESSAGES.length), 1300)
+    const t = setInterval(() => setI(n => (n + 1) % messages.length), 1300)
     return () => clearInterval(t)
-  }, [])
+  }, [messages.length])
 
   return (
-    <div className={`splash${leaving ? ' leaving' : ''}`} role="status" aria-live="polite" aria-label="Loading NPrep Community">
+    <div className={`splash${inline ? ' inline' : ''}${leaving ? ' leaving' : ''}`} role="status" aria-live="polite" aria-label="Loading NPrep Community">
       <div className="splash-logo-wrap">
         <span className="splash-halo" />
         <span className="splash-halo h2" />
@@ -37,7 +40,7 @@ export default function LoadingScreen({ error, leaving, onRetry }) {
       ) : (
         <>
           <div className="splash-bar"><span /></div>
-          <div key={i} className="splash-msg">{MESSAGES[i]}</div>
+          <div key={i} className="splash-msg">{messages[i % messages.length]}</div>
         </>
       )}
     </div>

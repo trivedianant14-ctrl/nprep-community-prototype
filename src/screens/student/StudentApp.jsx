@@ -3,12 +3,18 @@ import Home from './Home'
 import CommunityHome from './community/CommunityHome'
 import RoomView from './community/RoomView'
 import ThreadDetail from './community/ThreadDetail'
+import LoadingScreen from '../LoadingScreen'
 import { P, BD, T3 } from '../shared'
+
+const OPEN_COMMUNITY_MESSAGES = ['Opening your rooms…', "Loading today's posts…", 'Almost there…']
+const LOADER_HOLD_MS = 1300 // how long the loader covers Home before Community slides in
+const LOADER_EXIT_MS = 500
 
 export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoined, onPostReply, onVote, onLikeThread, onLikeReply, onCreatePost, onReportReply, onRegisterForWebinar, onExit }) {
   const [screen, setScreen] = useState('home') // home | community | room | thread
   const [activeTile, setActiveTile] = useState(null)
   const [activeThreadId, setActiveThreadId] = useState(null)
+  const [loader, setLoader] = useState(null) // null | 'in' | 'out' — the "opening Community" loading screen
   // Directional screen motion: going deeper (community -> room -> thread) slides in from the
   // right, going back slides in from the left, and hopping between the two bottom tabs fades.
   const [anim, setAnim] = useState('')
@@ -33,6 +39,17 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
 
   const goHome = () => go('home')
   const goCommunity = () => go('community')
+  // Home's "Join the Conversation" CTA: cover Home with the loader, open Community underneath
+  // once it has held for a moment, then fade the loader out to reveal it.
+  const openCommunityWithLoader = () => {
+    if (loader) return
+    setLoader('in')
+    setTimeout(() => {
+      go('community')
+      setLoader('out')
+      setTimeout(() => setLoader(null), LOADER_EXIT_MS)
+    }, LOADER_HOLD_MS)
+  }
   // Room-chip switch — jumps straight into the new room's thread list without a popup
   // and without detouring back through the Community landing screen.
   const switchRoom = (tile) => { setActiveTile(tile); go('room') }
@@ -42,7 +59,7 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div key={screen === 'thread' ? `thread-${activeThreadId}` : screen} className={`screen-trans ${anim}`}>
         {screen === 'home' && (
-          <Home onOpenCommunity={goCommunity} onExit={onExit} state={state} />
+          <Home onOpenCommunity={openCommunityWithLoader} onExit={onExit} state={state} />
         )}
         {screen === 'community' && (
           <CommunityHome
@@ -101,6 +118,8 @@ export default function StudentApp({ state, onOnboard, onSetExam, onSetRoomJoine
           ))}
         </div>
       )}
+
+      {loader && <LoadingScreen inline leaving={loader === 'out'} messages={OPEN_COMMUNITY_MESSAGES} />}
     </div>
   )
 }
