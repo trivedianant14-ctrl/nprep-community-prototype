@@ -353,17 +353,14 @@ function attachmentTypeFor(mime) {
   return null
 }
 
-// Uploads an image/video/PDF straight from the browser to Vercel Blob via a short-lived
-// client token (api/blob/upload.js issues it) — bypasses the function body-size limit a
-// proxied upload would hit. Shared by the CMS attachment field (any room) and the student
-// reply composer in Webinar Threads.
+// "Uploads" an image/video/PDF by wrapping it in an object URL — there is no backend, so the
+// file lives in this browser tab only (it won't survive a page reload). Shared by the CMS
+// attachment field (any room) and the student reply composer in Webinar Threads.
 export async function uploadAttachment(file) {
   const type = attachmentTypeFor(file.type)
   if (!type) throw new Error('Only images, videos, or PDFs can be attached')
   if (file.size > MAX_ATTACHMENT_BYTES) throw new Error('File must be under 100MB')
-  const { upload } = await import('@vercel/blob/client')
-  const blob = await upload(file.name, file, { access: 'public', handleUploadUrl: '/api/blob/upload' })
-  return { url: blob.url, name: file.name, type }
+  return { url: URL.createObjectURL(file), name: file.name, type }
 }
 
 function FileIcon({ color = '#D6204A' }) {

@@ -27,9 +27,8 @@ export const REPORT_REASONS = ['Spam', 'Abusive or rude', 'Wrong information', '
 // row per exam (student auto-enrolls into the one matching their profile) but the UI
 // groups all of them under a single "Exam Room" tile, matching the PRD's four-room layout.
 //
-// The exam list itself lives in the backend (the `exams` table, see _lib/exams.js); this
-// is only the fallback used when that table is empty or not migrated yet.
-export const DEFAULT_EXAMS = ['NORCET', 'AIIMS', 'DSSSB']
+// The exam list lives here now (no backend) — edit EXAMS to change it.
+export const EXAMS = ['NORCET', 'AIIMS', 'DSSSB']
 
 export const SUBJECT_TAGS = ['Medical Surgical Nursing', 'Community Health Nursing', 'Child Health Nursing', 'Mental Health Nursing', 'OBG Nursing']
 

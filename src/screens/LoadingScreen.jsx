@@ -4,7 +4,7 @@ import { RoomIcon } from './shared'
 const MESSAGES = ['Warming up the rooms…', "Fetching today's Daily Dose…", 'Catching up on new posts…', 'Almost there…']
 const ROOM_KINDS = ['daily_dose', 'subject_room', 'exam_room', 'webinar_threads', 'yt_lectures', 'recent_updates', 'nursing_jobs']
 
-// Branded splash shown while the first /api/state response is on its way. The logo floats inside
+// Branded splash shown on first load. The logo floats inside
 // two pulsing halos with an orbiting dot, the seven room icons bounce in sequence, and a progress
 // bar sweeps while the status line cycles. When the data is ready the parent flips `leaving` and
 // the whole screen scales up and fades out. `error` swaps the progress for a retry button.
