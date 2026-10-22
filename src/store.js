@@ -2,13 +2,15 @@
 // in this module and is persisted to localStorage, so the prototype works as a static site.
 // Each mutation function below mirrors one of the old API handlers; getState() mirrors the
 // old GET /api/state response, so the screens keep reading the same shape.
+import { seedVolume } from './data/seedVolume'
 import {
   DEMO_STUDENT_KEY, DEMO_STUDENT_NAME, NPREP_TEAM_KEY, EXAMS, SUBJECT_TAGS, REPORT_REASONS,
   CONTRIBUTOR_POST_ROOM_KINDS, ACTIVE_CONTRIBUTOR_THRESHOLD, ELIGIBLE_TO_POST_THRESHOLD,
   CONTRIBUTOR_INACTIVITY_DAYS, buildRooms, buildRoomTiles, examRoomKey,
 } from './data/constants'
 
-const STORAGE_KEY = 'nprep-community-prototype-v1'
+const STORAGE_KEY = 'nprep-community-prototype-v2' // v1 held the small seed; v2 adds the volume seed
+const OLD_STORAGE_KEYS = ['nprep-community-prototype-v1']
 const MIN = 60 * 1000, HOUR = 60 * MIN, DAY = 24 * HOUR
 const PEER_NAMES = ['Priya S.', 'Rohit K.', 'Anjali M.', 'Kavya R.', 'Suresh M.', 'Deepak V.', 'Sneha R.', 'Meera J.']
 
@@ -49,19 +51,21 @@ function seed() {
   const addThread = (t) => {
     const row = {
       id: ++db.seq.thread, roomKey: t.roomKey, title: t.title, body: t.body || '', subjectTag: t.subjectTag || null,
-      questionId: t.questionId || null, hidden: false, approvalStatus: 'approved', archiveAt: t.archiveAt || null,
-      authorKey: null, authorName: null,
+      questionId: t.questionId || null, hidden: false, approvalStatus: t.approvalStatus || 'approved', archiveAt: t.archiveAt || null,
+      authorKey: t.authorKey || null, authorName: t.authorName || null,
       attachmentUrl: t.attachmentUrl || null, attachmentName: t.attachmentName || null, attachmentType: t.attachmentType || null,
-      startsAt: null, resourceUrl: null, resourceName: null, createdAt: t.createdAt,
+      startsAt: t.startsAt || null, resourceUrl: null, resourceName: null, createdAt: t.createdAt,
     }
     db.threads.push(row)
     return row
   }
-  const addReply = (threadId, studentKey, authorName, body, createdAt) => {
-    db.replies.push({
-      id: ++db.seq.reply, threadId, studentKey, authorName, body, hidden: false, parentReplyId: null, pinnedAt: null,
+  const addReply = (threadId, studentKey, authorName, body, createdAt, parentReplyId = null) => {
+    const row = {
+      id: ++db.seq.reply, threadId, studentKey, authorName, body, hidden: false, parentReplyId, pinnedAt: null,
       attachmentUrl: null, attachmentName: null, attachmentType: null, createdAt,
-    })
+    }
+    db.replies.push(row)
+    return row
   }
 
   for (const q of QUESTIONS) db.questions.push({ id: ++db.seq.question, ...q })
@@ -106,30 +110,34 @@ function seed() {
     body: 'Sharing what we know so far, will keep this updated.', createdAt: at(-6 * HOUR),
   })
   addReply(norcet.id, 'peer-4', 'Kavya R.', 'Heard forms open next month, fingers crossed.', at(-5 * HOUR))
-  addThread({
+  const aiims = addThread({
     roomKey: 'exam_room_aiims', title: 'AIIMS cutoff trend — last 3 years',
     body: "Posting the cutoff numbers we've tracked so far for AIIMS Nursing Officer.", createdAt: at(-1 * DAY),
   })
 
   // Webinar Threads — one still active, one auto-archived (48h past its session). Each
   // carries a sample "related content" PDF (bundled in /public/samples).
-  addThread({
+  const webinarLive = addThread({
     roomKey: 'webinar_threads', title: 'Live now: MCQ Discussion — Community Health High-Yield',
     body: 'Drop your questions here during the session.', archiveAt: at(20 * HOUR), createdAt: at(-4 * HOUR),
     attachmentUrl: '/samples/mcq-discussion-notes.pdf', attachmentName: 'mcq-discussion-notes.pdf', attachmentType: 'pdf',
   })
-  addThread({
+  const webinarRecap = addThread({
     roomKey: 'webinar_threads', title: 'Recap: Topper Journey session',
     body: 'Session wrapped — thanks for joining! This thread is now archived.', archiveAt: at(-1 * HOUR), createdAt: at(-49 * HOUR),
     attachmentUrl: '/samples/topper-journey-recap.pdf', attachmentName: 'topper-journey-recap.pdf', attachmentType: 'pdf',
   })
 
   // Daily Dose can also carry a "Current Affairs" post (no linked question).
-  addThread({
+  const affairs = addThread({
     roomKey: 'daily_dose', title: 'Current Affairs: New national nursing curriculum rollout',
     body: 'The health ministry announced a phased rollout of the revised B.Sc Nursing curriculum starting next academic year — expect NORCET/AIIMS questions to reference the updated syllabus.',
     subjectTag: 'Current Affairs', createdAt: at(-6 * HOUR),
   })
+
+  // The handful of hand-written threads above stay as they are; this layers the bulk
+  // conversation (hundreds of comments, likes, reports, contributors) on top of them.
+  seedVolume({ db, now, addThread, addReply, topThreads: { dailyDose, subj1, subj2, norcet, aiims, webinarLive, webinarRecap, affairs } })
 
   return db
 }
@@ -151,6 +159,7 @@ function dropDeadBlobUrls(db) {
 
 function load() {
   try {
+    for (const k of OLD_STORAGE_KEYS) localStorage.removeItem(k)
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) return dropDeadBlobUrls(JSON.parse(raw))
   } catch {
